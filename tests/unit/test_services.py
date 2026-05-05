@@ -74,10 +74,13 @@ class TestCEPService:
         """is_multi_street_cep should return True when CEP has multiple streets."""
         from openaddrbr.services._cep import is_multi_street_cep
 
+        # Clear cache first to ensure fresh call
+        is_multi_street_cep.cache_clear()
+
         with patch("openaddrbr.services._cep._is_multi_street_cep") as mock:
             mock.return_value = True
 
-            result = is_multi_street_cep("01310000")
+            result = is_multi_street_cep("99999999")  # Use different CEP
             assert result is True
 
 

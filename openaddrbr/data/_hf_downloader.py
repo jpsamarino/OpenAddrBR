@@ -4,15 +4,16 @@ from pathlib import Path
 from typing import Optional
 
 try:
-    from huggingface_hub import snapshot_download
+    from huggingface_hub import snapshot_download, hf_hub_download
     HF_AVAILABLE = True
 except ImportError:
     snapshot_download = None
+    hf_hub_download = None
     HF_AVAILABLE = False
 
 from openaddrbr.data._config import get_data_path, ensure_data_path, get_sgeodb_path, get_usearch_dir
 
-REPO_ID = "your-org/openaddrbr-data"  # Placeholder - update to actual repo
+REPO_ID = "jpsamarino/OpenAddrBR"
 
 
 def download_data(
@@ -20,7 +21,7 @@ def download_data(
     force: bool = False,
     progress_callback=None,
 ) -> Path:
-    """Download data from Hugging Face Hub."""
+    """Download ALL data from Hugging Face Hub to data folder (~10GB)."""
     if not HF_AVAILABLE:
         raise ImportError(
             "huggingface_hub not installed. Install with: pip install huggingface_hub"
@@ -32,12 +33,14 @@ def download_data(
 
     print(f"Downloading data from Hugging Face: {actual_repo}")
     print(f"Destination: {data_path}")
+    print(f"This will download ~10GB of data. Please wait...")
 
+    # Download everything from the repo
     snapshot_download(
         repo_id=actual_repo,
+        repo_type="dataset",
         local_dir=str(data_path),
         resume_download=True,
-        local_files_only=not force,
     )
 
     print(f"Data downloaded successfully to {data_path}")
