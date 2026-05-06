@@ -1,5 +1,6 @@
 """Hugging Face data download manager."""
 
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -11,10 +12,15 @@ except ImportError:
     hf_hub_download = None
     HF_AVAILABLE = False
 
-from openaddrbr.data._config import get_data_path, ensure_data_path, get_sgeodb_path, get_usearch_dir, get_model_path
+from openaddrbr.data._config import get_data_path, ensure_data_path, get_sgeodb_path, get_usearch_dir, get_model_path, DEFAULT_DATA_DIR
 
 REPO_ID = "jpsamarino/OpenAddrBR"
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"
+
+
+def _print(msg: str) -> None:
+    """Print message to stderr to avoid polluting stdout (which may be captured)."""
+    print(msg, file=sys.stderr)
 
 
 def download_data(
@@ -28,39 +34,54 @@ def download_data(
             "huggingface_hub not installed. Install with: pip install huggingface_hub"
         )
 
-    ensure_data_path()
     data_path = get_data_path()
     actual_repo = repo_id or REPO_ID
 
-    print(f"Downloading data from Hugging Face: {actual_repo}")
-    print(f"Destination: {data_path}")
-    print(f"This will download ~10GB of data plus the model (~1GB). Please wait...")
+    _print(f"[OpenAddrBR] Data path: {data_path}")
 
-    # Download everything from the repo (sgeobr.db and usearch_v2)
-    snapshot_download(
-        repo_id=actual_repo,
-        repo_type="dataset",
-        local_dir=str(data_path),
-        resume_download=True,
-    )
+    # Check if data already exists at default location (don't re-download)
+    if not force and data_path == DEFAULT_DATA_DIR and check_data_exists():
+        _print(f"[OpenAddrBR] Data and model already exist at {data_path}")
+        return data_path
 
-    print(f"Data downloaded successfully to {data_path}")
+    ensure_data_path()
+
+    _print(f"[OpenAddrBR] Downloading data from Hugging Face: {actual_repo}")
+    _print(f"[OpenAddrBR] Destination: {data_path}")
+    _print(f"[OpenAddrBR] This will download ~10GB of data plus the model (~1GB). Please wait...")
+
+    # Suppress huggingface_hub stdout noise by redirecting to stderr
+    old_stdout = sys.stdout
+    sys.stdout = sys.stderr
+
+    try:
+        # Download everything from the repo (sgeobr.db and usearch_v2)
+        snapshot_download(
+            repo_id=actual_repo,
+            repo_type="dataset",
+            local_dir=str(data_path),
+            resume_download=True,
+        )
+    finally:
+        sys.stdout = old_stdout
+
+    _print(f"[OpenAddrBR] Data downloaded successfully to {data_path}")
 
     # Download sentence-transformers model
-    print(f"Downloading sentence-transformers model...")
+    _print(f"[OpenAddrBR] Downloading sentence-transformers model...")
     from sentence_transformers import SentenceTransformer
 
     model_path = get_model_path()
     if not model_path.exists() or force:
         model_path.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Downloading model to {model_path}...")
+        _print(f"[OpenAddrBR] Downloading model to {model_path}...")
         tmp_model = SentenceTransformer(MODEL_NAME)
         tmp_model.save(str(model_path))
-        print(f"Model saved to {model_path}")
+        _print(f"[OpenAddrBR] Model saved to {model_path}")
     else:
-        print(f"Model already exists at {model_path}")
+        _print(f"[OpenAddrBR] Model already exists at {model_path}")
 
-    print(f"Setup complete! All data and model are ready.")
+    _print(f"[OpenAddrBR] Setup complete! All data and model are ready.")
     return data_path
 
 
