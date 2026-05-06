@@ -90,3 +90,6 @@ Thumbs.db
 **/created-files/
 **/backup-files/
 /old
+
+# Superpowers (temporary specs/plans, not for commit)
+docs/superpowers/
