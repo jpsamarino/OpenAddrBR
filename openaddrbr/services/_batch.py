@@ -1,15 +1,15 @@
 """Batch geocoding service - get_geo_info_batch implementation."""
 
 from openaddrbr.core.models import AddressRequest, GeoLocationResult, NormalizedAddress, StreetCluster
+from openaddrbr.services._encoder import _encode_streets_batch
 from openaddrbr.services._geocode import (
-    _encode_streets_batch,
     _build_result,
-    _search_by_embedding,
     _get_city_info,
-    _fetch_clusters_by_street_names,
-    is_multi_street_cep,
-    search_by_cep,
 )
+from openaddrbr.services._vector_search import (
+    _fetch_clusters_by_street_names,
+)
+from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.utils import normalize_text, find_best_street_match
 from openaddrbr.data import query_street_query, search_vector as search_vector_index
 
