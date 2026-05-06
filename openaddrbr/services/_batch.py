@@ -70,7 +70,7 @@ def get_geo_info_batch(
                 query_ids = search_vector_index(embedding, addr.city_info.city_code, limit=20)
                 if query_ids:
                     street_rows = query_street_query(query_ids, addr.city_info.city_code)
-                    street_names = [row["street_normalized"] for row in street_rows]
+                    street_names = [row.street_normalized for row in street_rows]
                     if street_names:
                         clusters = _fetch_clusters_by_street_names(
                             street_names, addr.city_info.city_code

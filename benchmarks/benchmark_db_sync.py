@@ -1,6 +1,7 @@
 """
-Benchmark runner for SYNC ISGEODatabase implementations.
-Measures query throughput in ns per operation.
+Benchmark runner comparing two implementations:
+1. SQLite3 (_db_ref_base.py)
+2. APSW module-level singleton (_db.py)
 """
 
 import json
@@ -8,12 +9,36 @@ import time
 from pathlib import Path
 from dataclasses import dataclass
 
-from domain.repositories.ISGEODatabase import ISGEODatabase
+# SQLite3
+from benchmarks._db_ref_base import (
+    get_connection,
+    close_connection,
+    get_city_info_from_db,
+    is_multi_street_cep,
+    query_address_by_cep,
+    query_full_address_by_street_id,
+    query_geo_locations,
+    query_street_query,
+    query_address_by_street_names,
+    query_query_ids,
+)
+
+# APSW module-level
+from openaddrbr.data import (
+    close_connection as apsw_close_connection,
+    get_city_info_from_db as apsw_get_city_info,
+    is_multi_street_cep as apsw_is_multi_street_cep,
+    query_address_by_cep as apsw_query_address_by_cep,
+    query_full_address_by_street_id as apsw_query_full_address_by_street_id,
+    query_geo_locations as apsw_query_geo_locations,
+    query_street_query as apsw_query_street_query,
+    query_address_by_street_names as apsw_query_address_by_street_names,
+    query_query_ids as apsw_query_query_ids,
+)
 
 
 @dataclass
 class BenchmarkResult:
-    """Resultado de benchmark de uma função."""
     name: str
     total_ms: float
     count: int
@@ -26,13 +51,7 @@ def load_json(path: Path) -> list:
         return json.load(f)
 
 
-def benchmark_fn_sync(
-    name: str,
-    fn,
-    data: list,
-    warmup_runs: int = 3
-) -> BenchmarkResult:
-    """Roda benchmark de uma função sync com os dados fornecidos."""
+def benchmark_fn_sync(name: str, fn, data: list, warmup_runs: int = 3) -> BenchmarkResult:
     count = len(data)
 
     # Warmup
@@ -62,10 +81,7 @@ def print_result(r: BenchmarkResult):
     print(f"  {r.name:<40} | {r.ns_per_query:>10.0f} ns/q | {r.queries_per_sec:>8.0f} qps | {r.count:>6,}x")
 
 
-def run_benchmarks_sync(db: ISGEODatabase, data_dir: Path):
-    """Roda todos os benchmarks para uma implementação sync de banco."""
-    print(f"\nLoading datasets from {data_dir}...")
-
+def run_benchmarks(name: str, impl: dict, data_dir: Path):
     datasets = {
         "get_city_info": load_json(data_dir / "get_city_info.json"),
         "is_multi_street_cep": load_json(data_dir / "is_multi_street_cep.json"),
@@ -77,126 +93,115 @@ def run_benchmarks_sync(db: ISGEODatabase, data_dir: Path):
         "fetch_query_ids": load_json(data_dir / "fetch_query_ids.json"),
     }
 
-    for name, data in datasets.items():
-        print(f"  {name}: {len(data):,} items")
+    for db_name, data in datasets.items():
+        print(f"  {db_name}: {len(data):,} items")
 
-    # Sync version doesn't need initialize() but we call it for interface consistency
-    try:
-        import asyncio
-        asyncio.get_event_loop().run_until_complete(db.initialize())
-    except:
-        pass
+    impl["init"]()
 
     print()
     print("=" * 85)
-    print(f"BENCHMARK: {db.__class__.__name__} (SYNC)")
+    print(f"BENCHMARK: {name}")
     print("=" * 85)
     print(f"{'Function':<42} | {'ns/query':>12} | {'qps':>10} | {'count':>8}")
     print("-" * 85)
 
     results = []
 
-    # get_city_info(city_name, state_code)
-    r = benchmark_fn_sync(
-        "get_city_info",
-        lambda p: db.get_city_info(p[0], p[1]),
-        datasets["get_city_info"],
-    )
+    r = benchmark_fn_sync("get_city_info", lambda p: impl["get_city_info"](p[0], p[1]), datasets["get_city_info"])
     results.append(r)
     print_result(r)
 
-    # is_multi_street_cep(cep)
-    r = benchmark_fn_sync(
-        "is_multi_street_cep",
-        lambda p: db.is_multi_street_cep(p),
-        datasets["is_multi_street_cep"],
-    )
+    r = benchmark_fn_sync("is_multi_street_cep", lambda p: impl["is_multi_street_cep"](p), datasets["is_multi_street_cep"])
     results.append(r)
     print_result(r)
 
-    # fetch_address_by_cep(zip_code)
-    r = benchmark_fn_sync(
-        "fetch_address_by_cep",
-        lambda p: db.fetch_address_by_cep(p),
-        datasets["fetch_address_by_cep"],
-    )
+    r = benchmark_fn_sync("fetch_address_by_cep", lambda p: impl["query_address_by_cep"](str(p), limit=10), datasets["fetch_address_by_cep"])
     results.append(r)
     print_result(r)
 
-    # fetch_address_by_street_id(street_id)
-    r = benchmark_fn_sync(
-        "fetch_address_by_street_id",
-        lambda p: db.fetch_address_by_street_id(p),
-        datasets["fetch_address_by_street_id"],
-    )
+    r = benchmark_fn_sync("fetch_address_by_street_id", lambda p: impl["query_full_address_by_street_id"](p), datasets["fetch_address_by_street_id"])
     results.append(r)
     print_result(r)
 
-    # fetch_geo_location(street_id, number)
-    r = benchmark_fn_sync(
-        "fetch_geo_location",
-        lambda p: db.fetch_geo_location(p["street_id"], p["number"]),
-        datasets["fetch_geo_location"],
-    )
+    r = benchmark_fn_sync("fetch_geo_location", lambda p: impl["query_geo_locations"](p["street_id"], p["number"], limit=3), datasets["fetch_geo_location"])
     results.append(r)
     print_result(r)
 
-    # fetch_street_by_query_ids(query_ids, city_code)
-    r = benchmark_fn_sync(
-        "fetch_street_by_query_ids",
-        lambda p: db.fetch_street_by_query_ids(p[0], p[1]),
-        datasets["fetch_street_by_query_ids"],
-    )
+    r = benchmark_fn_sync("fetch_street_by_query_ids", lambda p: impl["query_street_query"](p[0], p[1]), datasets["fetch_street_by_query_ids"])
     results.append(r)
     print_result(r)
 
-    # fetch_address_by_street_names(street_names, city_code)
-    r = benchmark_fn_sync(
-        "fetch_address_by_street_names",
-        lambda p: db.fetch_address_by_street_names(p[0], p[1]),
-        datasets["fetch_address_by_street_names"],
-    )
+    r = benchmark_fn_sync("fetch_address_by_street_names", lambda p: impl["query_address_by_street_names"](p[0], p[1]), datasets["fetch_address_by_street_names"])
     results.append(r)
     print_result(r)
 
-    # fetch_query_ids(city_code)
-    r = benchmark_fn_sync(
-        "fetch_query_ids",
-        lambda p: db.fetch_query_ids(p),
-        datasets["fetch_query_ids"],
-    )
+    r = benchmark_fn_sync("fetch_query_ids", lambda p: impl["query_query_ids"](p), datasets["fetch_query_ids"])
     results.append(r)
     print_result(r)
 
-    try:
-        import asyncio
-        asyncio.get_event_loop().run_until_complete(db.close())
-    except:
-        pass
+    impl["close"]()
 
-    return results
+    return {r.name: r for r in results}
 
 
 def main():
-    from application._db_sync import SGEODatabaseSync
-
     data_dir = Path(__file__).parent / "data_benchmarks_db"
 
     print("=" * 85)
-    print("DB BENCHMARK - SYNC ISGEODatabase implementation")
+    print("DB BENCHMARK - 2 implementations comparison")
     print("=" * 85)
 
-    print("\n[Benchmarking SGEODatabaseSync...]")
-    db_sync = SGEODatabaseSync()
-    results_sync = run_benchmarks_sync(db_sync, data_dir)
+    # _db_ref_base.py (SQLite3)
+    sqlite_impl = {
+        "init": get_connection,
+        "close": close_connection,
+        "get_city_info": get_city_info_from_db,
+        "is_multi_street_cep": is_multi_street_cep,
+        "query_address_by_cep": query_address_by_cep,
+        "query_full_address_by_street_id": query_full_address_by_street_id,
+        "query_geo_locations": query_geo_locations,
+        "query_street_query": query_street_query,
+        "query_address_by_street_names": query_address_by_street_names,
+        "query_query_ids": query_query_ids,
+    }
 
+    # _db.py (APSW module-level singleton)
+    apsw_impl = {
+        "init": lambda: None,
+        "close": apsw_close_connection,
+        "get_city_info": apsw_get_city_info,
+        "is_multi_street_cep": apsw_is_multi_street_cep,
+        "query_address_by_cep": apsw_query_address_by_cep,
+        "query_full_address_by_street_id": apsw_query_full_address_by_street_id,
+        "query_geo_locations": apsw_query_geo_locations,
+        "query_street_query": apsw_query_street_query,
+        "query_address_by_street_names": apsw_query_address_by_street_names,
+        "query_query_ids": apsw_query_query_ids,
+    }
+
+    print("\n[1/2] _db_ref_base.py (SQLite3)...")
+    results_sqlite = run_benchmarks("_db_ref_base.py (SQLite3)", sqlite_impl, data_dir)
+
+    print("\n[2/2] _db.py (APSW singleton)...")
+    results_apsw = run_benchmarks("_db.py (APSW singleton)", apsw_impl, data_dir)
+
+    # Comparison
     print()
-    print("=" * 85)
-    print("SYNC RESULTS (ns/query)")
-    print("=" * 85)
+    print("=" * 100)
+    print("COMPARISON (ns/query)")
+    print("=" * 100)
+    print(f"{'Function':<42} | {'_db_ref_base':>14} | {'_db.py':>14} | {'Best':>12}")
+    print("-" * 100)
 
-    for r in results_sync:
-        print(f"  {r.name:<40} | {r.ns_per_query:>10.0f} ns/q | {r.queries_per_sec:>8.0f} qps | {r.count:>6,}x")
+    for name in results_sqlite:
+        r_sql = results_sqlite[name]
+        r_apsw = results_apsw[name]
+
+        times = {"_db_ref_base": r_sql.ns_per_query, "_db": r_apsw.ns_per_query}
+        best = min(times, key=times.get)
+        speedup = max(times.values()) / min(times.values())
+
+        print(f"  {r_sql.name:<40} | {r_sql.ns_per_query:>12.0f}ns | {r_apsw.ns_per_query:>12.0f}ns | {best} ({speedup:.1f}x)")
 
     print()
     print("=" * 85)

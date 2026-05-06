@@ -14,7 +14,7 @@ def get_city_info(city_name: str, state_code: str) -> CityInfo | None:
         return None
 
     return CityInfo(
-        city_code=row["city_code"],
-        city_name=row["city_name"],
-        state_code=row["state_code"],
+        city_code=row.city_code,
+        city_name=row.city_name,
+        state_code=row.state_code,
     )

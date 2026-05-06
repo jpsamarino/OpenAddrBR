@@ -83,7 +83,7 @@ def _find_best_geo_location(
     ref_is_even = number % 2 == 0
 
     for row in rows:
-        addr_num = row["address_number"]
+        addr_num = row.address_number
         if addr_num is None:
             continue
         try:
@@ -94,19 +94,19 @@ def _find_best_geo_location(
         addr_is_even = addr_int % 2 == 0
         if ref_is_even == addr_is_even:
             return GeoLocation(
-                latitude=row["latitude"],
-                longitude=row["longitude"],
-                address_id=row["address_id"],
+                latitude=row.latitude,
+                longitude=row.longitude,
+                address_id=row.address_id,
                 address_number=addr_num,
             )
 
     # No parity match - return first
     row = rows[0]
     return GeoLocation(
-        latitude=row["latitude"],
-        longitude=row["longitude"],
-        address_id=row["address_id"],
-        address_number=int(row["address_number"]),
+        latitude=row.latitude,
+        longitude=row.longitude,
+        address_id=row.address_id,
+        address_number=int(row.address_number),
     )
 
 
@@ -123,13 +123,13 @@ def _fetch_clusters_by_street_names(
     clusters: list[StreetCluster] = []
     last_street_id = None
     for row in rows:
-        sid = row["street_id"]
+        sid = row.street_id
         if sid != last_street_id:
             clusters.append(StreetCluster(street_id=sid))
             last_street_id = sid
         current = clusters[-1]
-        current.street_normalized.add(row["street_normalized"])
-        current.neighborhood_normalized.add(row["neighborhood_normalized"])
+        current.street_normalized.add(row.street_normalized)
+        current.neighborhood_normalized.add(row.neighborhood_normalized)
     return clusters
 
 
@@ -147,7 +147,7 @@ def _search_by_embedding(
         return None
 
     street_rows = query_street_query(query_ids, city_code)
-    street_names = [row["street_normalized"] for row in street_rows]
+    street_names = [row.street_normalized for row in street_rows]
     if not street_names:
         return None
 
@@ -178,14 +178,14 @@ def _build_result(
     cluster_data = {"streets": set(), "neighborhoods": set(), "zip_codes": set()}
 
     for row in rows:
-        if row["street_normalized"] in street_cluster.street_normalized:
-            cluster_data["streets"].add((row["street_normalized"], row["street_name"]))
+        if row.street_normalized in street_cluster.street_normalized:
+            cluster_data["streets"].add((row.street_normalized, row.street_name))
             cluster_data["neighborhoods"].add(
-                (row["neighborhood_normalized"], row["neighborhood_name"])
+                (row.neighborhood_normalized, row.neighborhood_name)
             )
-            if row["zip_code"]:
+            if row.zip_code:
                 cluster_data["zip_codes"].add(
-                    (str(row["zip_code"]).zfill(8), row["id"], row["source_type"])
+                    (str(row.zip_code).zfill(8), row.id, row.source_type)
                 )
 
     geo_result = _find_best_geo_location(street_id, number)

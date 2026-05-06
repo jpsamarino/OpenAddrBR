@@ -28,13 +28,13 @@ def search_by_cep(
     clusters: list[StreetCluster] = []
     last_street_id = None
     for row in rows:
-        sid = row["street_id"]
+        sid = row.street_id
         if sid != last_street_id:
             clusters.append(StreetCluster(street_id=sid))
             last_street_id = sid
         current = clusters[-1]
-        current.street_normalized.add(row["street_normalized"])
-        current.neighborhood_normalized.add(row["neighborhood_normalized"])
+        current.street_normalized.add(row.street_normalized)
+        current.neighborhood_normalized.add(row.neighborhood_normalized)
 
     return find_best_street_match(
         clusters,

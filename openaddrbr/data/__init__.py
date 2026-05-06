@@ -17,6 +17,7 @@ from openaddrbr.data._db import (
     query_full_address_by_street_id,
     query_geo_locations,
     query_street_query,
+    query_query_ids,
 )
 from openaddrbr.data._usearch import get_city_index, search_vector
 from openaddrbr.data._hf_downloader import download_data, check_data_exists
@@ -36,6 +37,7 @@ __all__ = [
     "query_full_address_by_street_id",
     "query_geo_locations",
     "query_street_query",
+    "query_query_ids",
     "get_city_index",
     "search_vector",
     "download_data",
