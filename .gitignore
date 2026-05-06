@@ -81,16 +81,12 @@ dmypy.json
 Thumbs.db
 
 # Project specific (data files - not committed)
+# Local data directory (sgeobr.db, usearch_v2, model)
+/data/
+**/data/
 **/*.db
-# Keep openaddrbr/data as code (not project data files)
-openaddrbr/data/
-!openaddrbr/data/
-tests/unit/data/
-!tests/unit/data/
 **/raw-files/
 **/process-files/
 **/created-files/
 **/backup-files/
-**/data/usearch_v2
-**/data/*.db
 /old
