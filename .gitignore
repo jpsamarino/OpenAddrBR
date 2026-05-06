@@ -93,3 +93,6 @@ Thumbs.db
 
 # Superpowers (temporary specs/plans, not for commit)
 docs/superpowers/
+
+# Claude (session-specific, not for commit)
+.claude/
