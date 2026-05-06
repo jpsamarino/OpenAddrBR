@@ -9,7 +9,7 @@ sys.path.insert(0, "d:/projetos/OpenAddrBR")
 import pytest
 from unittest.mock import MagicMock, patch
 from openaddrbr.core.models import CityInfo, StreetCluster, AddressRequest
-from openaddrbr.data._db import AddressRow, CityRow
+from openaddrbr.data._db import AddressRecord, CityRecord
 
 
 class TestCityService:
@@ -20,7 +20,7 @@ class TestCityService:
         from openaddrbr.services._city import get_city_info
 
         with patch("openaddrbr.services._city.get_city_info_from_db") as mock_db:
-            mock_db.return_value = CityRow(city_code=3550308, city_name="São Paulo", state_code="SP")
+            mock_db.return_value = CityRecord(city_code=3550308, city_name="São Paulo", state_code="SP")
 
             result = get_city_info("São Paulo", "SP")
             assert result is not None
@@ -48,7 +48,7 @@ class TestCEPService:
 
         with patch("openaddrbr.services._cep.query_address_by_cep") as mock_query:
             mock_query.return_value = [
-                AddressRow(street_id=1, street_normalized="AVENIDA PAULISTA", neighborhood_normalized="BELA VISTA"),
+                AddressRecord(street_id=1, street_normalized="AVENIDA PAULISTA", neighborhood_normalized="BELA VISTA"),
             ]
 
             result = search_by_cep("01310000", "AVENIDA PAULISTA", "BELA VISTA")

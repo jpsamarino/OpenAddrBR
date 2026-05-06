@@ -146,8 +146,7 @@ def _search_by_embedding(
     if not query_ids:
         return None
 
-    street_rows = query_street_query(query_ids, city_code)
-    street_names = [row.street_normalized for row in street_rows]
+    street_names = query_street_query(query_ids, city_code)
     if not street_names:
         return None
 

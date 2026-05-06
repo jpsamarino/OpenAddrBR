@@ -11,22 +11,22 @@ from openaddrbr.data._config import get_sgeodb_path
 from typing import NamedTuple
 
 
-class CityRow(NamedTuple):
-    """Row for city queries: (city_code, city_name, state_code)."""
+class CityRecord(NamedTuple):
+    """Record for city queries: (city_code, city_name, state_code)."""
     city_code: int
     city_name: str
     state_code: str
 
 
-class AddressRow(NamedTuple):
-    """Row for address queries by CEP or street names: (street_id, street_normalized, neighborhood_normalized)."""
+class AddressRecord(NamedTuple):
+    """Record for address queries by CEP or street names: (street_id, street_normalized, neighborhood_normalized)."""
     street_id: int
     street_normalized: str
     neighborhood_normalized: str
 
 
-class FullAddressRow(NamedTuple):
-    """Row for full address queries: (street_name, street_normalized, neighborhood_name, neighborhood_normalized, zip_code, id, source_type)."""
+class FullAddressRecord(NamedTuple):
+    """Record for full address queries: (street_name, street_normalized, neighborhood_name, neighborhood_normalized, zip_code, id, source_type)."""
     street_name: str
     street_normalized: str
     neighborhood_name: str
@@ -36,17 +36,12 @@ class FullAddressRow(NamedTuple):
     source_type: str
 
 
-class GeoRow(NamedTuple):
-    """Row for geo location queries: (latitude, longitude, address_number, address_id)."""
+class GeoInfoRecord(NamedTuple):
+    """Record for geo location queries: (latitude, longitude, address_number, address_id)."""
     latitude: float
     longitude: float
     address_number: int
     address_id: int
-
-
-class StreetRow(NamedTuple):
-    """Row for street queries: (street_normalized,)."""
-    street_normalized: str
 
 
 # ----- Global singleton instance -----
@@ -115,7 +110,7 @@ def get_connection():
 # ----- Query functions -----
 
 @lru_cache(maxsize=7000)
-def get_city_info_from_db(city_name: str, state_code: str) -> CityRow | None:
+def get_city_info_from_db(city_name: str, state_code: str) -> CityRecord | None:
     """Query city info from database. Cached."""
     from openaddrbr.utils import normalize_text
 
@@ -131,7 +126,7 @@ def get_city_info_from_db(city_name: str, state_code: str) -> CityRow | None:
     row = cursor.fetchone()
     if not row:
         return None
-    return CityRow(*row)
+    return CityRecord(*row)
 
 
 @lru_cache(maxsize=10000)
@@ -145,7 +140,7 @@ def is_multi_street_cep(cep: str) -> bool:
     return cursor.fetchone() is not None
 
 
-def query_address_by_cep(zip_code: str, limit: int = 10) -> list[AddressRow]:
+def query_address_by_cep(zip_code: str, limit: int = 10) -> list[AddressRecord]:
     """Query address rows by zip code."""
     cursor = _get_db()._get_cursor()
     cursor.execute(
@@ -153,10 +148,10 @@ def query_address_by_cep(zip_code: str, limit: int = 10) -> list[AddressRow]:
         "FROM address WHERE zip_code = ? ORDER BY street_id, id DESC LIMIT ?",
         (zip_code, limit),
     )
-    return [AddressRow(*r) for r in cursor.fetchall()]
+    return [AddressRecord(*r) for r in cursor.fetchall()]
 
 
-def query_address_by_street_names(street_names: list[str], city_code: int) -> list[AddressRow]:
+def query_address_by_street_names(street_names: list[str], city_code: int) -> list[AddressRecord]:
     """Query address rows by street names."""
     if not street_names:
         return []
@@ -169,10 +164,10 @@ def query_address_by_street_names(street_names: list[str], city_code: int) -> li
         f"ORDER BY street_id, qt_refs DESC",
         [city_code] + street_names,
     )
-    return [AddressRow(*r) for r in cursor.fetchall()]
+    return [AddressRecord(*r) for r in cursor.fetchall()]
 
 
-def query_full_address_by_street_id(street_id: int) -> list[FullAddressRow]:
+def query_full_address_by_street_id(street_id: int) -> list[FullAddressRecord]:
     """Query full address info by street_id."""
     cursor = _get_db()._get_cursor()
     cursor.execute(
@@ -181,10 +176,10 @@ def query_full_address_by_street_id(street_id: int) -> list[FullAddressRow]:
         "FROM address WHERE street_id = ? ORDER BY qt_refs DESC",
         (street_id,),
     )
-    return [FullAddressRow(*r) for r in cursor.fetchall()]
+    return [FullAddressRecord(*r) for r in cursor.fetchall()]
 
 
-def query_geo_locations(street_id: int, number: int, limit: int = 3) -> list[GeoRow]:
+def query_geo_locations(street_id: int, number: int, limit: int = 3) -> list[GeoInfoRecord]:
     """Query geo locations for a street_id."""
     cursor = _get_db()._get_cursor()
     n = number if number is not None and number < 999999 else 0
@@ -194,10 +189,10 @@ def query_geo_locations(street_id: int, number: int, limit: int = 3) -> list[Geo
         "ORDER BY ABS(CAST(address_number AS INTEGER) - ?) LIMIT ?",
         (street_id, n, limit),
     )
-    return [GeoRow(*r) for r in cursor.fetchall()]
+    return [GeoInfoRecord(*r) for r in cursor.fetchall()]
 
 
-def query_street_query(query_ids: list[int], city_code: int) -> list[StreetRow]:
+def query_street_query(query_ids: list[int], city_code: int) -> list[str]:
     """Query street_query table for vector search results."""
     if not query_ids:
         return []
@@ -208,7 +203,7 @@ def query_street_query(query_ids: list[int], city_code: int) -> list[StreetRow]:
         "WHERE query_id IN carray(?) AND city_code = ?",
         (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64), str(city_code)),
     )
-    return [StreetRow(*r) for r in cursor.fetchall()]
+    return [r[0] for r in cursor.fetchall()]
 
 
 def query_query_ids(city_code: int) -> list[int]:
