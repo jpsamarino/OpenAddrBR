@@ -187,10 +187,21 @@ def _encode_street(street_norm: str) -> np.ndarray | None:
     return model.encode([street_norm], show_progress_bar=False)[0]
 
 
-def _encode_streets_batch(street_norms: list[str], batch_size: int) -> list[np.ndarray]:
-    """Batch encode street names."""
+def _encode_streets_batch(
+    street_norms: list[str],
+    batch_size: int | None = None,
+) -> list[np.ndarray]:
+    """Batch encode street names.
+
+    Args:
+        street_norms: List of normalized street names.
+        batch_size: Batch size. If None, uses OPENADDRBR_BATCH_SIZE env var
+                    or defaults to 16.
+    """
     if not street_norms:
         return []
+    if batch_size is None:
+        batch_size = int(os.environ.get("OPENADDRBR_BATCH_SIZE", 16))
     return _get_model().encode(
         street_norms, batch_size=batch_size, show_progress_bar=False
     )
