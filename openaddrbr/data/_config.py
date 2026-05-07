@@ -7,8 +7,8 @@ from typing import Optional
 # Environment variable for data path override
 ENV_DATA_PATH = "OPENADDRBR_DATA_PATH"
 
-# Default data directory (project root/data)
-DEFAULT_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+# Default data directory (inside package data folder, named dbs)
+DEFAULT_DATA_DIR = Path(__file__).parent / "dbs"
 
 # Singleton state
 _data_path: Optional[Path] = None

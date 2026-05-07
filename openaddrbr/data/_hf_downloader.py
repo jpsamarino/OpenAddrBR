@@ -78,6 +78,7 @@ def download_data(
             repo_type="dataset",
             local_dir=str(data_path),
             resume_download=True,
+            max_workers=2,
         )
     finally:
         sys.stdout = old_stdout
