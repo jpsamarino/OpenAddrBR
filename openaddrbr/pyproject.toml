@@ -9,7 +9,7 @@ description = "Brazilian address geocoder using vector search (usearch) + SQLite
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
-authors = [{name = "Your Name", email = "your@email.com"}]
+authors = [{name = "jpsamarino"}]
 keywords = ["geocoding", "brazil", "ibge", "address", "vector-search"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -25,12 +25,16 @@ dependencies = [
     "numpy",
     "rapidfuzz",
     "huggingface_hub",
+    "torch",
+    "apsw",
+    "optimum[onnxruntime]",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
+    "psutil",
 ]
 
 [project.scripts]
