@@ -19,7 +19,7 @@ from openaddrbr.data._db import (
     query_street_query,
     query_query_ids,
 )
-from openaddrbr.data._usearch import get_city_index, search_vector
+from openaddrbr.data._usearch import get_semantic_index, search_vector
 from openaddrbr.data._hf_downloader import download_data, check_data_exists
 
 __all__ = [
@@ -38,7 +38,7 @@ __all__ = [
     "query_geo_locations",
     "query_street_query",
     "query_query_ids",
-    "get_city_index",
+    "get_semantic_index",
     "search_vector",
     "download_data",
     "check_data_exists",

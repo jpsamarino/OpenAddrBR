@@ -1,8 +1,7 @@
 """
-Vector Search benchmark - measure throughput for search phase only.
+Encode + Vector Search benchmark - measure throughput for full pipeline.
 
-Encode is measured separately in benchmark_encoder.py.
-This benchmark focuses only on the vector search pipeline.
+Measures both encode and search phases separately.
 """
 
 import argparse
@@ -24,7 +23,6 @@ def load_addresses(
     with open(path, "r", encoding="utf-8") as f:
         records = json.load(f)
 
-    # Shuffle to get random sample across the file
     import random
     random.shuffle(records)
 
@@ -41,7 +39,7 @@ def load_addresses(
     return addresses
 
 
-def run_search_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
+def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     items = []
     for rec in addresses:
         place = rec.get("place") or {}
@@ -64,10 +62,12 @@ def run_search_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     if not items:
         return {"error": "No valid addresses"}
 
-    # Encode all street names (suppress stdout/stderr from sentence_transformers)
+    # Suppress stdout/stderr from sentence_transformers
     old_stderr = sys.stderr
     sys.stderr = StringIO()
 
+    # Encode phase
+    encode_start = time.perf_counter()
     embeddings = []
     for i in range(0, len(items), batch_size):
         batch = items[i : i + batch_size]
@@ -75,6 +75,7 @@ def run_search_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
             [x["street_norm"] for x in batch], batch_size=batch_size
         )
         embeddings.extend(emb_batch)
+    encode_elapsed = time.perf_counter() - encode_start
 
     sys.stderr = old_stderr
 
@@ -92,41 +93,26 @@ def run_search_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     search_elapsed = time.perf_counter() - search_start
 
     total = len(items)
+    total_elapsed = encode_elapsed + search_elapsed
+
     return {
         "items": total,
-        "ms": search_elapsed * 1000,
-        "ms_per_item": (search_elapsed * 1000) / total,
-        "qps": total / search_elapsed if search_elapsed > 0 else 0,
-        "found": sum(results),
-        "found_pct": sum(results) / total * 100,
-    }
-
-    # Search phase
-    search_start = time.perf_counter()
-    results = []
-    for i, item in enumerate(items):
-        cluster = _search_by_embedding(
-            item["city_code"],
-            embeddings[i],
-            item["street_norm"],
-            item["neighborhood_norm"],
-        )
-        results.append(cluster is not None)
-    search_elapsed = time.perf_counter() - search_start
-
-    total = len(items)
-    return {
-        "items": total,
-        "ms": search_elapsed * 1000,
-        "ms_per_item": (search_elapsed * 1000) / total,
-        "qps": total / search_elapsed if search_elapsed > 0 else 0,
+        "encode_ms": encode_elapsed * 1000,
+        "search_ms": search_elapsed * 1000,
+        "total_ms": total_elapsed * 1000,
+        "encode_per_item": (encode_elapsed * 1000) / total,
+        "search_per_item": (search_elapsed * 1000) / total,
+        "total_per_item": (total_elapsed * 1000) / total,
+        "encode_qps": total / encode_elapsed if encode_elapsed > 0 else 0,
+        "search_qps": total / search_elapsed if search_elapsed > 0 else 0,
+        "total_qps": total / total_elapsed if total_elapsed > 0 else 0,
         "found": sum(results),
         "found_pct": sum(results) / total * 100,
     }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Vector Search benchmark")
+    parser = argparse.ArgumentParser(description="Encode + Vector Search benchmark")
     parser.add_argument(
         "--limit", type=int, default=1000, help="Max addresses (default: 1000)"
     )
@@ -143,14 +129,12 @@ def main():
 
     data_path = Path(__file__).parent / "google_ref_lat_long.json"
 
-    print("=" * 65)
-    print("VECTOR SEARCH BENCHMARK")
-    print("=" * 65)
+    print("=" * 70)
+    print("ENCODE + VECTOR SEARCH BENCHMARK")
+    print("=" * 70)
     print(f"Data:       {data_path.name}")
     print(f"Batch size: {args.batch_size}")
     print()
-    print(f"{'Test':<20} | {'Items':>6} | {'ms':>7} | {'ms/item':>8} | {'QPS':>7} | {'Found':>7}")
-    print("-" * 65)
 
     tests = []
 
@@ -158,7 +142,7 @@ def main():
         # Multi-city test first
         addrs = load_addresses(data_path, args.limit)
         if len(addrs) >= 10:
-            stats = run_search_benchmark(addrs, batch_size=args.batch_size)
+            stats = run_benchmark(addrs, batch_size=args.batch_size)
             tests.append(("Multi-city", stats))
 
         # Single city tests
@@ -166,30 +150,32 @@ def main():
             addrs = load_addresses(data_path, args.limit, city_filter=city)
             if len(addrs) < 10:
                 continue
-            stats = run_search_benchmark(addrs, batch_size=args.batch_size)
+            stats = run_benchmark(addrs, batch_size=args.batch_size)
             tests.append((f"{city} only", stats))
     else:
-        addrs = load_addresses(
-            data_path, args.limit, city_filter=args.city
-        )
+        addrs = load_addresses(data_path, args.limit, city_filter=args.city)
         if not addrs:
             print("No addresses found")
             return
-        stats = run_search_benchmark(addrs, batch_size=args.batch_size)
+        stats = run_benchmark(addrs, batch_size=args.batch_size)
         city_name = args.city if args.city else "Multi-city"
         tests.append((city_name, stats))
+
+    # Header
+    print(f"{'Test':<20} | {'Items':>6} | {'Encode':>10} | {'Search':>10} | {'Total':>10} | {'Found':>7}")
+    print("-" * 70)
 
     for name, stats in tests:
         print(
             f"{name:<20} | "
             f"{stats['items']:>6,} | "
-            f"{stats['ms']:>7.0f} | "
-            f"{stats['ms_per_item']:>8.2f} | "
-            f"{stats['qps']:>7.1f} | "
+            f"{stats['encode_ms']:>8.0f}ms ({stats['encode_per_item']:.2f}ms/i) | "
+            f"{stats['search_ms']:>8.0f}ms ({stats['search_per_item']:.2f}ms/i) | "
+            f"{stats['total_ms']:>8.0f}ms ({stats['total_per_item']:.2f}ms/i) | "
             f"{stats['found_pct']:>6.1f}%"
         )
 
-    print("=" * 65)
+    print("=" * 70)
 
 
 if __name__ == "__main__":

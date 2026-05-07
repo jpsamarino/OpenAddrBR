@@ -13,8 +13,8 @@ except ImportError:
 from openaddrbr.data._config import get_usearch_dir
 
 
-@lru_cache(maxsize=100)
-def get_city_index(city_code: int) -> Optional["usearch_Index"]:
+@lru_cache(maxsize=128)
+def get_semantic_index(city_code: int) -> Optional["usearch_Index"]:
     """Load usearch city index with LRU cache."""
     if usearch_Index is None:
         return None
@@ -29,7 +29,7 @@ def search_vector(
     embedding, city_code: int, limit: int = 20
 ) -> list[int]:
     """Search for query_ids by vector similarity using usearch."""
-    index = get_city_index(city_code)
+    index = get_semantic_index(city_code)
     if index is None:
         return []
 

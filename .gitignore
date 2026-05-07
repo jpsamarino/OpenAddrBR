@@ -83,7 +83,6 @@ Thumbs.db
 # Project specific (data files - not committed)
 # Local data directory (sgeobr.db, usearch_v2, model)
 /data/
-**/data/
 **/*.db
 **/raw-files/
 **/process-files/
