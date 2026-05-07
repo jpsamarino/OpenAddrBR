@@ -42,7 +42,8 @@ openaddrbr = "openaddrbr.cli:_main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["openaddrbr*"]
+include = ["*"]
+exclude = ["tests", "tests.*", "benchmarks", "benchmarks.*", "docs", "docs.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
