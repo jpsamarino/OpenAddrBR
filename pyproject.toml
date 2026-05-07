@@ -40,10 +40,21 @@ dev = [
 [project.scripts]
 openaddrbr = "openaddrbr.cli:_main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["*"]
-exclude = ["tests", "tests.*", "benchmarks", "benchmarks.*", "docs", "docs.*"]
+# map package name to directory
+[tool.setuptools.package-dir]
+openaddrbr = "openaddrbr"
+
+[tool.setuptools]
+packages = [
+    "openaddrbr",
+    "openaddrbr.cli",
+    "openaddrbr.core",
+    "openaddrbr.core.models",
+    "openaddrbr.core.interfaces",
+    "openaddrbr.data",
+    "openaddrbr.services",
+    "openaddrbr.utils",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
