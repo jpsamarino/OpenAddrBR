@@ -6,15 +6,11 @@ Brazilian address geocoder using vector search (usearch) + IBGE database (sgeobr
 
 ## Installation
 
-**Windows (PowerShell):**
-```powershell
-pip install git+https://github.com/jpsamarino/OpenAddrBR.git#egg=openaddrbr`&subdirectory=openaddrbr
+```bash
+pip install git+https://github.com/jpsamarino/OpenAddrBR.git
 ```
 
-**Linux/Mac:**
-```bash
-pip install git+https://github.com/jpsamarino/OpenAddrBR.git#egg=openaddrbr\&subdirectory=openaddrbr
-```
+Works on Windows, Linux, and Mac.
 
 ## Setup
 

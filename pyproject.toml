@@ -24,7 +24,7 @@ dependencies = [
     "sentence-transformers",
     "numpy",
     "rapidfuzz",
-    "huggingface_hub",
+    "huggingface_hub[hf_xet]",
     "torch",
     "apsw",
     "optimum[onnxruntime]",
