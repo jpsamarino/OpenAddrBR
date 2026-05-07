@@ -278,7 +278,7 @@ def main():
     worst_n = ranked[:WORST_N]
 
     # Save worst matches to file
-    output_file = DATA_PATH.parent / f"worst_matches_{WORST_N}.json"
+    output_file =  DATA_PATH.parent.parent/ "data" / f"worst_matches_{WORST_N}.json"
     save_worst_matches(worst_n, records, results, output_file)
 
 
