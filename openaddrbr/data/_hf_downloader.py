@@ -42,46 +42,86 @@ def _get_remote_compressed_files() -> dict[str, str]:
         return {}
 
 
+def _verify_zst(path: Path) -> bool:
+    """Check if file is a valid zstd archive (magic bytes)."""
+    ZSTD_MAGIC = b'\x28\xb5\x2f\xfd'
+    try:
+        with open(path, 'rb') as f:
+            return f.read(4) == ZSTD_MAGIC
+    except Exception:
+        return False
+
+
 def _download_compressed_file(filename: str, dest_dir: Path, force: bool = False) -> Path:
     """Download a single .tar.zst file from HF and return local path."""
     from huggingface_hub import hf_hub_download
+    import tempfile
+    import shutil
 
     local_path = dest_dir / filename
     if local_path.exists() and not force:
         return local_path
 
-    downloaded = hf_hub_download(
-        repo_id=REPO_ID,
-        filename=filename,
-        repo_type="dataset",
-        local_dir=str(dest_dir),
-    )
-    return Path(downloaded)
+    # Remove existing locked file before download if possible
+    if local_path.exists():
+        try:
+            local_path.unlink()
+        except PermissionError:
+            pass  # Will download to temp and we handle below
+
+    # Download to temp dir
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloaded = hf_hub_download(
+            repo_id=REPO_ID,
+            filename=filename,
+            repo_type="dataset",
+            local_dir=tmpdir,
+        )
+        downloaded_path = Path(downloaded)
+
+        # Try to replace destination file
+        try:
+            if local_path.exists():
+                local_path.unlink()
+            shutil.copy2(downloaded, str(local_path))
+        except (PermissionError, FileExistsError):
+            # Destination is locked - keep downloaded file in temp dir
+            # Return a path that won't conflict (use original path for caller)
+            # But since caller will try to extract from returned path,
+            # we need to actually make the file accessible
+            # Copy to dest with different name
+            temp_copy = dest_dir / f".tmp_{filename}"
+            shutil.copy2(downloaded, str(temp_copy))
+            return temp_copy
+
+    return local_path
 
 
 def _extract_tar_zst(tar_path: Path, dest_dir: Path, remove_after: bool = True) -> None:
-    """Extract a .tar.zst file using zstandard + tarfile."""
+    """Extract a .tar.zst file using zstandard streaming + tarfile."""
     _print(f"[OpenAddrBR] Extracting {tar_path.name}...")
 
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp_tar:
-        tmp_tar_path = tmp_tar.name
+    if not _verify_zst(tar_path):
+        raise RuntimeError(f"{tar_path.name} is not a valid zstd archive. Download may be corrupted.")
 
+    extracted_ok = False
     try:
-        with open(tar_path, "rb") as compressed:
+        with open(tar_path, "rb") as fin:
             dctx = zstd.ZstdDecompressor()
-            with open(tmp_tar_path, "wb") as decompressed:
-                dctx.copy_stream(compressed, decompressed)
+            with dctx.stream_reader(fin) as zst_reader:
+                with tarfile.open(fileobj=zst_reader, mode="r|") as tar:
+                    for member in tar:
+                        tar.extract(member, path=dest_dir)
 
-        with tarfile.open(tmp_tar_path, "r") as tar:
-            tar.extractall(path=dest_dir)
-
+        extracted_ok = True
         _print(f"[OpenAddrBR] Extracted: {tar_path.name}")
-    finally:
-        import os as _os
-        _os.unlink(tmp_tar_path)
-        if remove_after:
-            tar_path.unlink()
+    except Exception as e:
+        _print(f"[OpenAddrBR] Extraction failed: {e}")
+        raise
+
+    if remove_after and extracted_ok:
+        tar_path.unlink()
+        _print(f"[OpenAddrBR] Removed: {tar_path.name}")
 
 
 def _get_missing_items() -> list[str]:
