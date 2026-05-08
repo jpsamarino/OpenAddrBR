@@ -56,6 +56,7 @@ packages = [
     "openaddrbr.services",
     "openaddrbr.utils",
 ]
+include_package_data = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
