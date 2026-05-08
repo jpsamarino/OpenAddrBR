@@ -104,7 +104,7 @@ def download_data(
     force: bool = False,
     progress_callback=None,
 ) -> Path:
-    """Download ALL data from Hugging Face Hub to data folder (~10GB + model)."""
+    """Download and extract data from Hugging Face Hub (.tar.zst archives)."""
     if not HF_AVAILABLE:
         raise ImportError(
             "huggingface_hub not installed. Install with: pip install huggingface_hub"
@@ -115,45 +115,33 @@ def download_data(
 
     _print(f"[OpenAddrBR] Data path: {data_path}")
 
-    # Check what's missing
-    missing = _get_missing_items()
+    # Check what's missing locally
+    missing_local = _get_missing_items()
 
-    if not missing and not force:
+    if not missing_local and not force:
         _print(f"[OpenAddrBR] All data already exists! Nothing to download.")
         return data_path
 
-    if missing:
-        _print(f"[OpenAddrBR] Missing: {', '.join(missing)}")
+    if missing_local:
+        _print(f"[OpenAddrBR] Missing: {', '.join(missing_local)}")
 
     ensure_data_path()
 
-    # Download from HuggingFace (handles resume automatically)
-    _print(f"[OpenAddrBR] Downloading data from Hugging Face: {actual_repo}")
-    _print(f"[OpenAddrBR] Destination: {data_path}")
-    _print(f"[OpenAddrBR] HF will download only missing files (resume support)...")
+    # Get available compressed files on remote
+    remote_files = _get_remote_compressed_files()
+    _print(f"[OpenAddrBR] Remote .tar.zst files: {list(remote_files.keys())}")
 
-    # Suppress huggingface_hub stdout noise by redirecting to stderr
-    old_stdout = sys.stdout
-    sys.stdout = sys.stderr
+    # Download and extract .tar.zst for each required item
+    for local_name, remote_name in [("sgeobr.db", COMPRESSED_SGEEBR_DB), ("usearch_v2/", COMPRESSED_USEARCH)]:
+        if local_name in missing_local and remote_name in remote_files:
+            _print(f"[OpenAddrBR] Downloading {remote_name}...")
+            tar_path = _download_compressed_file(remote_name, data_path, force=force)
+            _print(f"[OpenAddrBR] Extracting {tar_path.name}...")
+            _extract_tar_zst(Path(tar_path), data_path)
 
-    # Get HF token if available (for higher rate limits on paid accounts)
-    hf_token = os.environ.get("HF_TOKEN")
+    _print(f"[OpenAddrBR] HF data extracted to {data_path}")
 
-    try:
-        snapshot_download(
-            repo_id=actual_repo,
-            repo_type="dataset",
-            local_dir=str(data_path),
-            resume_download=True,
-            max_workers=2,
-            token=hf_token,
-        )
-    finally:
-        sys.stdout = old_stdout
-
-    _print(f"[OpenAddrBR] HF data downloaded to {data_path}")
-
-    # Download sentence-transformers model
+    # Download sentence-transformers model (unchanged)
     model_path = get_model_path()
     if not model_path.exists() or force:
         _print(f"[OpenAddrBR] Downloading sentence-transformers model...")
