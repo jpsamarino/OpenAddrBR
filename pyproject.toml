@@ -25,6 +25,7 @@ dependencies = [
     "numpy",
     "rapidfuzz",
     "huggingface_hub[hf_xet]",
+    "hf_xet",
     "torch",
     "apsw",
     "optimum[onnxruntime]",
