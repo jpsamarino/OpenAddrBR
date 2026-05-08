@@ -3,7 +3,12 @@
 from functools import lru_cache
 
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import query_address_by_cep, is_multi_street_cep as _is_multi_street_cep
+from openaddrbr.data import (
+    is_multi_street_cep as _is_multi_street_cep,
+)
+from openaddrbr.data import (
+    query_address_by_cep,
+)
 from openaddrbr.utils import find_best_street_match
 
 

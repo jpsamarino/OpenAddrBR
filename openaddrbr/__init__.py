@@ -14,8 +14,13 @@ Usage:
     )
 """
 
-from openaddrbr.services import get_city_info, search_by_cep, geocode, get_geo_info_batch
-from openaddrbr.data import set_data_path, get_data_path, download_data
+from openaddrbr.data import download_data, get_data_path, set_data_path
+from openaddrbr.services import (
+    geocode,
+    get_city_info,
+    get_geo_info_batch,
+    search_by_cep,
+)
 
 __all__ = [
     "geocode",

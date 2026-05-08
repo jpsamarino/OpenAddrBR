@@ -13,7 +13,7 @@ def text_to_ascii(text: str) -> str:
     Returns:
         ASCII representation of the input string with accents removed.
     """
-    return normalize('NFKD', text or "").encode('ASCII', 'ignore').decode('ASCII')
+    return normalize("NFKD", text or "").encode("ASCII", "ignore").decode("ASCII")
 
 
 def normalize_text(text: str) -> str:

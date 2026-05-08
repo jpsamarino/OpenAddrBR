@@ -79,13 +79,9 @@ def _build_result(
     for row in rows:
         if row.street_normalized in street_cluster.street_normalized:
             cluster_data["streets"].add((row.street_normalized, row.street_name))
-            cluster_data["neighborhoods"].add(
-                (row.neighborhood_normalized, row.neighborhood_name)
-            )
+            cluster_data["neighborhoods"].add((row.neighborhood_normalized, row.neighborhood_name))
             if row.zip_code:
-                cluster_data["zip_codes"].add(
-                    (str(row.zip_code).zfill(8), row.id, row.source_type)
-                )
+                cluster_data["zip_codes"].add((str(row.zip_code).zfill(8), row.id, row.source_type))
 
     geo_result = _find_best_geo_location(street_id, number)
     if geo_result:

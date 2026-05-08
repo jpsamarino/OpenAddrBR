@@ -11,9 +11,7 @@ from openaddrbr.data import (
 from openaddrbr.utils import find_best_street_match
 
 
-def _fetch_clusters_by_street_names(
-    street_names: list[str], city_code: int
-) -> list[StreetCluster]:
+def _fetch_clusters_by_street_names(street_names: list[str], city_code: int) -> list[StreetCluster]:
     """Fetch and build street clusters from normalized street names."""
     if not street_names:
         return []

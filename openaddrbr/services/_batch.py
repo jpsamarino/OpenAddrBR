@@ -1,6 +1,14 @@
 """Batch geocoding service - get_geo_info_batch implementation."""
 
-from openaddrbr.core.models import AddressRequest, GeoLocationResult, NormalizedAddress, StreetCluster
+from openaddrbr.core.models import (
+    AddressRequest,
+    GeoLocationResult,
+    NormalizedAddress,
+    StreetCluster,
+)
+from openaddrbr.data import query_street_query
+from openaddrbr.data import search_vector as search_vector_index
+from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._encoder import _encode_streets_batch
 from openaddrbr.services._geocode import (
     _build_result,
@@ -9,9 +17,7 @@ from openaddrbr.services._geocode import (
 from openaddrbr.services._vector_search import (
     _fetch_clusters_by_street_names,
 )
-from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
-from openaddrbr.utils import normalize_text, find_best_street_match
-from openaddrbr.data import query_street_query, search_vector as search_vector_index
+from openaddrbr.utils import find_best_street_match, normalize_text
 
 
 def get_geo_info_batch(
@@ -29,9 +35,7 @@ def get_geo_info_batch(
             address=addr,
             city_info=_get_city_info(addr.city, addr.state),
             street_norm=normalize_text(addr.street) if addr.street else "",
-            neighborhood_norm=(
-                normalize_text(addr.neighborhood) if addr.neighborhood else ""
-            ),
+            neighborhood_norm=(normalize_text(addr.neighborhood) if addr.neighborhood else ""),
             zip_code=(
                 "".join(c for c in str(addr.zip_code) if c.isdigit()).zfill(8)
                 if addr.zip_code
@@ -52,18 +56,14 @@ def get_geo_info_batch(
 
     for i in range(0, len(valid), batch_size):
         batch = valid[i : i + batch_size]
-        embeddings = _encode_streets_batch(
-            [addr.street_norm for addr in batch], len(batch)
-        )
+        embeddings = _encode_streets_batch([addr.street_norm for addr in batch], len(batch))
 
         for addr, embedding in zip(batch, embeddings):
             cluster = None
 
             # Try CEP search first
             if addr.zip_code and not is_multi_street_cep(addr.zip_code):
-                cluster = search_by_cep(
-                    addr.zip_code, addr.street_norm, addr.neighborhood_norm
-                )
+                cluster = search_by_cep(addr.zip_code, addr.street_norm, addr.neighborhood_norm)
 
             # Fall back to vector search
             if not cluster:

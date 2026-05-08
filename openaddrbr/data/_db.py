@@ -13,6 +13,7 @@ from typing import NamedTuple
 
 class CityRecord(NamedTuple):
     """Record for city queries: (city_code, city_name, state_code)."""
+
     city_code: int
     city_name: str
     state_code: str
@@ -20,6 +21,7 @@ class CityRecord(NamedTuple):
 
 class AddressRecord(NamedTuple):
     """Record for address queries by CEP or street names: (street_id, street_normalized, neighborhood_normalized)."""
+
     street_id: int
     street_normalized: str
     neighborhood_normalized: str
@@ -27,6 +29,7 @@ class AddressRecord(NamedTuple):
 
 class FullAddressRecord(NamedTuple):
     """Record for full address queries: (street_name, street_normalized, neighborhood_name, neighborhood_normalized, zip_code, id, source_type)."""
+
     street_name: str
     street_normalized: str
     neighborhood_name: str
@@ -38,6 +41,7 @@ class FullAddressRecord(NamedTuple):
 
 class GeoInfoRecord(NamedTuple):
     """Record for geo location queries: (latitude, longitude, address_number, address_id)."""
+
     latitude: float
     longitude: float
     address_number: int
@@ -61,7 +65,7 @@ class _DB:
                 if self._conn is None:
                     self._conn = apsw.Connection(
                         self._db_path,
-                        flags=apsw.SQLITE_OPEN_READONLY | apsw.SQLITE_OPEN_NOMUTEX
+                        flags=apsw.SQLITE_OPEN_READONLY | apsw.SQLITE_OPEN_NOMUTEX,
                     )
                     self._conn.execute("PRAGMA cache_size = -64000")
                     self._conn.execute("PRAGMA mmap_size = 134217728")
@@ -108,6 +112,7 @@ def get_connection():
 
 
 # ----- Query functions -----
+
 
 @lru_cache(maxsize=7000)
 def get_city_info_from_db(city_name: str, state_code: str) -> CityRecord | None:
@@ -197,7 +202,7 @@ def query_street_query(query_ids: list[int], city_code: int) -> list[str]:
     if not query_ids:
         return []
     cursor = _get_db()._get_cursor()
-    q_arr = array.array('q', query_ids)
+    q_arr = array.array("q", query_ids)
     cursor.execute(
         "SELECT DISTINCT street_normalized FROM street_query "
         "WHERE query_id IN carray(?) AND city_code = ?",

@@ -32,12 +32,18 @@ def _get_sample_addresses() -> list[str]:
     if benchmark_data.exists():
         with open(benchmark_data, encoding="utf-8") as f:
             records = json.load(f)
-            return [r.get("place", {}).get("street", "") for r in records[:500] if r.get("place", {}).get("street")]
+            return [
+                r.get("place", {}).get("street", "")
+                for r in records[:500]
+                if r.get("place", {}).get("street")
+            ]
 
     return []
 
 
-def _run_benchmark_for_backend(backend: str, addresses: list[str], batch_sizes: list[int]) -> list[dict]:
+def _run_benchmark_for_backend(
+    backend: str, addresses: list[str], batch_sizes: list[int]
+) -> list[dict]:
     """Run benchmark for a specific backend."""
     results = []
     # Ensure at least 200 addresses for reliable benchmark
@@ -51,11 +57,13 @@ def _run_benchmark_for_backend(backend: str, addresses: list[str], batch_sizes: 
                 _encode_streets_batch(batch, batch_size=batch_size)
             elapsed = time.perf_counter() - start
             streets_per_sec = len(addresses) / elapsed
-            results.append({
-                "backend": backend,
-                "batch": batch_size,
-                "streets_per_sec": streets_per_sec,
-            })
+            results.append(
+                {
+                    "backend": backend,
+                    "batch": batch_size,
+                    "streets_per_sec": streets_per_sec,
+                }
+            )
     except Exception as e:
         print(f"  ! {backend}: failed ({e})")
     return results
@@ -125,9 +133,7 @@ def _main(args=None):
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # download command
-    download_parser = subparsers.add_parser(
-        "download", help="Download data from Hugging Face"
-    )
+    download_parser = subparsers.add_parser("download", help="Download data from Hugging Face")
     download_parser.add_argument(
         "--force", action="store_true", help="Force re-download even if data exists"
     )
@@ -195,7 +201,10 @@ def _main(args=None):
                 label = f"  {r['backend']:<20} @ batch={r['batch']:>2}: {r['streets_per_sec']:>6.0f} streets/sec"
                 if r["backend"] == "onnx-int8":
                     label += "  [QUANTIZED]"
-                if r["backend"] == best_for_backend["backend"] and r["batch"] == best_for_backend["batch"]:
+                if (
+                    r["backend"] == best_for_backend["backend"]
+                    and r["batch"] == best_for_backend["batch"]
+                ):
                     label += "  [BEST]"
                 print(label)
                 all_results.append(r)
@@ -245,7 +254,9 @@ def _main(args=None):
         if onnx_int8_results:
             best_onnx_int8 = max(onnx_int8_results, key=lambda x: x["streets_per_sec"])
             if best_onnx_int8["streets_per_sec"] > best["streets_per_sec"]:
-                print(f"  Note: ONNX int8 was fastest ({best_onnx_int8['streets_per_sec']:.0f} streets/sec)")
+                print(
+                    f"  Note: ONNX int8 was fastest ({best_onnx_int8['streets_per_sec']:.0f} streets/sec)"
+                )
                 print(f"         but is quantized - using pytorch-compiled for accuracy")
                 print()
 
@@ -265,7 +276,9 @@ def _main(args=None):
             print()
 
         if cuda_available and best["backend"] == "cuda":
-            speedup = best["streets_per_sec"] / max(r["streets_per_sec"] for r in all_results if r["backend"] == "pytorch-compiled")
+            speedup = best["streets_per_sec"] / max(
+                r["streets_per_sec"] for r in all_results if r["backend"] == "pytorch-compiled"
+            )
             print(f"  [!] Your GPU is {speedup:.1f}x faster than CPU for encoding.")
             print()
 

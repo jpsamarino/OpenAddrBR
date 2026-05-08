@@ -47,12 +47,14 @@ def make_similarity_func(normalize_func=None):
     Returns:
         A similarity function with fixed normalization.
     """
+
     def similarity(text1: str, text2: str) -> float:
         t1 = normalize_func(text1) if normalize_func else (text1 or "")
         t2 = normalize_func(text2) if normalize_func else (text2 or "")
         if not t1 or not t2:
             return 0.0
         return fuzz.ratio(t1, t2) / 100
+
     return similarity
 
 
@@ -85,10 +87,7 @@ def find_best_street_match(
 
     for summary in clusters:
         best_s_sim = max(
-            (
-                similarity_func(ref_street_norm, s or "")
-                for s in summary.street_normalized
-            ),
+            (similarity_func(ref_street_norm, s or "") for s in summary.street_normalized),
             default=0.0,
         )
 
@@ -102,9 +101,9 @@ def find_best_street_match(
             )
 
             if best_n_sim > min_neighborhood_similarity:
-                total_score = (
-                    weight_street * best_s_sim + weight_neighborhood * best_n_sim
-                ) / (weight_street + weight_neighborhood)
+                total_score = (weight_street * best_s_sim + weight_neighborhood * best_n_sim) / (
+                    weight_street + weight_neighborhood
+                )
                 if total_score > best_total_score:
                     best_total_score = total_score
                     best_cluster = summary
