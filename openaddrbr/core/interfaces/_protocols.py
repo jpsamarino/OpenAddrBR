@@ -1,21 +1,22 @@
 """Protocol definitions for structural subtyping."""
 
 from typing import Protocol, runtime_checkable
+
+import numpy as np
+
 from openaddrbr.core.models import (
     AddressRequest,
     CityInfo,
     GeoLocationResult,
     StreetCluster,
 )
-import numpy as np
 
 
 @runtime_checkable
 class CityFinder(Protocol):
     """Protocol for finding city info by name and state."""
 
-    def get_city_info(self, city_name: str, state_code: str) -> CityInfo | None:
-        ...
+    def get_city_info(self, city_name: str, state_code: str) -> CityInfo | None: ...
 
 
 @runtime_checkable
@@ -27,13 +28,11 @@ class StreetSearcher(Protocol):
         zip_code: str,
         street_norm: str,
         neighborhood_norm: str,
-    ) -> StreetCluster | None:
-        ...
+    ) -> StreetCluster | None: ...
 
     def search_vector(
         self, embedding: np.ndarray, city_code: int, limit: int = 20
-    ) -> list[str]:
-        ...
+    ) -> list[str]: ...
 
 
 @runtime_checkable
@@ -48,8 +47,7 @@ class GeoCoder(Protocol):
         state: str,
         zip_code: str | None = None,
         number: int = 0,
-    ) -> GeoLocationResult | None:
-        ...
+    ) -> GeoLocationResult | None: ...
 
 
 @runtime_checkable
@@ -60,5 +58,4 @@ class BatchGeocoder(Protocol):
         self,
         addresses: list[AddressRequest],
         batch_size: int = 16,
-    ) -> list[GeoLocationResult | None]:
-        ...
+    ) -> list[GeoLocationResult | None]: ...

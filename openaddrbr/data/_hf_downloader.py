@@ -2,21 +2,24 @@
 
 import sys
 import tarfile
-import zstandard as zstd
 from pathlib import Path
 
-try:
-    import huggingface_hub
-    HF_AVAILABLE = True
-except ImportError:
-    HF_AVAILABLE = False
+import zstandard as zstd
+from huggingface_hub import hf_hub_download
+from sentence_transformers import SentenceTransformer
 
-from openaddrbr.data._config import get_data_path, ensure_data_path, get_sgeodb_path, get_usearch_dir, get_model_path
+from openaddrbr.data._config import (
+    ensure_data_path,
+    get_data_path,
+    get_model_path,
+    get_sgeodb_path,
+    get_usearch_dir,
+)
 
 REPO_ID = "jpsamarino/OpenAddrBR"
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"
 
-COMPRESSED_SGEEBR_DB = "sgeobr.db.tar.zst"
+COMPRESSED_SGEEBR_DB = "sgeobr.db"  # stored as direct file, not compressed
 COMPRESSED_USEARCH = "usearch_v2.tar.zst"
 
 
@@ -38,8 +41,7 @@ def _get_missing_items() -> list[str]:
 
 
 def _download(filename: str, dest_dir: Path) -> Path:
-    """Download a .tar.zst file from HF into dest_dir."""
-    from huggingface_hub import hf_hub_download
+    """Download a file from HF into dest_dir."""
     local_path = dest_dir / filename
     if local_path.exists():
         try:
@@ -69,12 +71,7 @@ def _extract(tar_path: Path, dest_dir: Path) -> None:
 
 
 def download_data(force: bool = False) -> Path:
-    """Download and extract data from Hugging Face Hub (.tar.zst archives)."""
-    if not HF_AVAILABLE:
-        raise ImportError(
-            "huggingface_hub not installed. Install with: pip install huggingface_hub"
-        )
-
+    """Download and extract data from Hugging Face Hub."""
     data_path = get_data_path()
     _print(f"[OpenAddrBR] Data path: {data_path}")
 
@@ -88,24 +85,24 @@ def download_data(force: bool = False) -> Path:
 
     ensure_data_path()
 
-    # Download and extract each .tar.zst
     for local_name, remote_name in [
         ("sgeobr.db", COMPRESSED_SGEEBR_DB),
         ("usearch_v2/", COMPRESSED_USEARCH),
     ]:
         if local_name in missing_local:
             _print(f"[OpenAddrBR] Downloading {remote_name}...")
-            tar_path = _download(remote_name, data_path)
-            _print(f"[OpenAddrBR] Extracting {tar_path.name}...")
-            _extract(tar_path, data_path)
+            path = _download(remote_name, data_path)
+            if remote_name.endswith(".tar.zst"):
+                _print(f"[OpenAddrBR] Extracting {path.name}...")
+                _extract(path, data_path)
+            else:
+                _print(f"[OpenAddrBR] Downloaded: {path.name}")
 
     _print(f"[OpenAddrBR] HF data extracted to {data_path}")
 
-    # Download sentence-transformers model
     model_path = get_model_path()
     if not model_path.exists() or force:
         _print("[OpenAddrBR] Downloading sentence-transformers model...")
-        from sentence_transformers import SentenceTransformer
         model_path.parent.mkdir(parents=True, exist_ok=True)
         _print(f"[OpenAddrBR] Downloading model to {model_path}...")
         tmp_model = SentenceTransformer(MODEL_NAME)

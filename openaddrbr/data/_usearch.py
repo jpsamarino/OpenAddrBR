@@ -1,8 +1,8 @@
 """Usearch index loading and management."""
 
-import os
 from functools import lru_cache
 from typing import Optional
+
 import numpy as np
 
 try:
@@ -25,9 +25,7 @@ def get_semantic_index(city_code: int) -> Optional["usearch_Index"]:
     return usearch_Index(path=str(index_path), view=True)
 
 
-def search_vector(
-    embedding, city_code: int, limit: int = 20
-) -> list[int]:
+def search_vector(embedding, city_code: int, limit: int = 20) -> list[int]:
     """Search for query_ids by vector similarity using usearch."""
     index = get_semantic_index(city_code)
     if index is None:

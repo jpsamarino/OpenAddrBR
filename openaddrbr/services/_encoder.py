@@ -1,5 +1,6 @@
 """Encoder - sentence transformer model for street name encoding."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Literal, Optional
@@ -10,10 +11,22 @@ from sentence_transformers import SentenceTransformer
 
 from openaddrbr.data._config import get_model_path
 
+# Silence spurious tokenizer warnings (false positive for XLM-RoBERTa)
+for _logger_name in ["transformers", "sentence_transformers", "onnxruntime", "optimum"]:
+    _logger = logging.getLogger(_logger_name)
+    _logger.setLevel(logging.ERROR)
+    _logger.propagate = False
+
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"
 
 EncoderBackend = Literal["pytorch", "pytorch-compiled", "onnx-int8", "onnx", "cuda"]
-VALID_BACKENDS: tuple[EncoderBackend, ...] = ("pytorch", "pytorch-compiled", "onnx-int8", "onnx", "cuda")
+VALID_BACKENDS: tuple[EncoderBackend, ...] = (
+    "pytorch",
+    "pytorch-compiled",
+    "onnx-int8",
+    "onnx",
+    "cuda",
+)
 
 _model: Optional[SentenceTransformer] = None
 _configured_backend: Optional[EncoderBackend] = None
@@ -64,6 +77,14 @@ def _get_model() -> SentenceTransformer:
     if _model is not None:
         return _model
 
+    import warnings
+
+    # Suppress specific false-positive warnings only
+    warnings.filterwarnings(
+        "ignore", message=".*torch.tensor results are registered as constants.*"
+    )
+    warnings.filterwarnings("ignore", message=".*incorrect regex pattern.*")
+
     model_path = get_model_path()
     if not model_path.exists():
         print(f"[MODEL] Downloading model to {model_path}...")
@@ -78,9 +99,10 @@ def _get_model() -> SentenceTransformer:
 
     # --- ONNX int8 ---
     if backend in ("onnx-int8",):
-        from sentence_transformers import export_dynamic_quantized_onnx_model
-        import tempfile
         import shutil as _shutil
+        import tempfile
+
+        from sentence_transformers import export_dynamic_quantized_onnx_model
 
         if not onnx_int8_path.exists():
             print(f"[MODEL] Exporting ONNX int8 to {onnx_int8_path}...")
@@ -88,7 +110,6 @@ def _get_model() -> SentenceTransformer:
             base = SentenceTransformer(
                 str(model_path),
                 backend="onnx",
-                processor_kwargs={"fix_mistral_regex": True},
             )
             base.save_pretrained(str(onnx_int8_path))
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -102,7 +123,6 @@ def _get_model() -> SentenceTransformer:
             str(onnx_int8_path),
             backend="onnx",
             model_kwargs={"file_name": "onnx/model.onnx"},
-            processor_kwargs={"fix_mistral_regex": True},
         )
         _model.max_seq_length = 128
         return _model
@@ -115,7 +135,6 @@ def _get_model() -> SentenceTransformer:
             base = SentenceTransformer(
                 str(model_path),
                 backend="onnx",
-                processor_kwargs={"fix_mistral_regex": True},
             )
             base.save_pretrained(str(onnx_float_path))
             print(f"[MODEL] ONNX float32 exported")
@@ -123,7 +142,6 @@ def _get_model() -> SentenceTransformer:
         _model = SentenceTransformer(
             str(onnx_float_path),
             backend="onnx",
-            processor_kwargs={"fix_mistral_regex": True},
         )
         _model.max_seq_length = 128
         return _model
@@ -202,6 +220,4 @@ def _encode_streets_batch(
         return []
     if batch_size is None:
         batch_size = int(os.environ.get("OPENADDRBR_BATCH_SIZE", 16))
-    return _get_model().encode(
-        street_norms, batch_size=batch_size, show_progress_bar=False
-    )
+    return _get_model().encode(street_norms, batch_size=batch_size, show_progress_bar=False)

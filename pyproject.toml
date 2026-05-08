@@ -29,6 +29,7 @@ dependencies = [
     "torch",
     "apsw",
     "optimum[onnxruntime]",
+    "zstandard",
 ]
 
 [project.optional-dependencies]
@@ -60,3 +61,13 @@ packages = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["I"]
+
+[tool.ruff.format]
+quote-style = "double"

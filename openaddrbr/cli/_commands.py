@@ -188,6 +188,8 @@ def _main(args=None):
         print("  === CPU Results ===")
         for backend in cpu_backends:
             results = _run_benchmark_for_backend(backend, addresses, batch_sizes)
+            if not results:
+                continue
             best_for_backend = max(results, key=lambda x: x["streets_per_sec"])
             for r in results:
                 label = f"  {r['backend']:<20} @ batch={r['batch']:>2}: {r['streets_per_sec']:>6.0f} streets/sec"
@@ -203,13 +205,16 @@ def _main(args=None):
         if cuda_available:
             print("  === GPU Results ===")
             results = _run_benchmark_for_backend("cuda", addresses, batch_sizes)
-            best_for_backend = max(results, key=lambda x: x["streets_per_sec"])
-            for r in results:
-                label = f"  cuda              @ batch={r['batch']:>2}: {r['streets_per_sec']:>6.0f} streets/sec"
-                if r["batch"] == best_for_backend["batch"]:
-                    label += "  [BEST]"
-                print(label)
-                all_results.append(r)
+            if not results:
+                print("  ! cuda: failed (no results)")
+            else:
+                best_for_backend = max(results, key=lambda x: x["streets_per_sec"])
+                for r in results:
+                    label = f"  cuda              @ batch={r['batch']:>2}: {r['streets_per_sec']:>6.0f} streets/sec"
+                    if r["batch"] == best_for_backend["batch"]:
+                        label += "  [BEST]"
+                    print(label)
+                    all_results.append(r)
             print()
 
         # Find best result (prioritize non-quantized)
