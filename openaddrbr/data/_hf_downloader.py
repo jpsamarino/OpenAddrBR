@@ -1,6 +1,5 @@
 """Hugging Face data download manager."""
 
-import os
 import sys
 import tarfile
 import zstandard as zstd
@@ -33,7 +32,7 @@ def _get_remote_compressed_files() -> dict[str, str]:
     """List .tar.zst files that exist in the remote HF repository."""
     from huggingface_hub import list_repo_files
     try:
-        files = list_repo_files(repo_id=REPO_ID, repo_type="dataset", token=os.environ.get("HF_TOKEN"))
+        files = list_repo_files(repo_id=REPO_ID, repo_type="dataset")
         result = {}
         for f in files:
             if f.endswith(".tar.zst"):
@@ -51,13 +50,11 @@ def _download_compressed_file(filename: str, dest_dir: Path, force: bool = False
     if local_path.exists() and not force:
         return local_path
 
-    token = os.environ.get("HF_TOKEN")
     downloaded = hf_hub_download(
         repo_id=REPO_ID,
         filename=filename,
         repo_type="dataset",
         local_dir=str(dest_dir),
-        token=token,
     )
     return Path(downloaded)
 
@@ -111,7 +108,6 @@ def download_data(
         )
 
     data_path = get_data_path()
-    actual_repo = repo_id or REPO_ID
 
     _print(f"[OpenAddrBR] Data path: {data_path}")
 
