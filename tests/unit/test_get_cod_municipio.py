@@ -3,6 +3,7 @@ Tests for get_city_code using IBGEGeocoder.
 """
 
 import pytest
+
 from application import IBGEGeocoder
 
 

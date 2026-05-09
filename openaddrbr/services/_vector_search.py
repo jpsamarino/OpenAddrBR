@@ -6,6 +6,8 @@ from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import (
     query_address_by_street_names,
     query_street_query,
+)
+from openaddrbr.data import (
     search_vector as search_vector_index,
 )
 from openaddrbr.utils import find_best_street_match

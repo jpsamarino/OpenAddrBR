@@ -11,8 +11,8 @@ import time
 from pathlib import Path
 from typing import NamedTuple
 
-from openaddrbr.core.models import AddressRequest
 from application import IBGEGeocoder
+from openaddrbr.core.models import AddressRequest
 
 # --- Config ---
 DATA_PATH = Path(__file__).parent / "google_ref_lat_long.json"

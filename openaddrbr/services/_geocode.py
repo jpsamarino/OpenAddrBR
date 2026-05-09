@@ -12,8 +12,8 @@ from openaddrbr.data import (
     query_full_address_by_street_id,
     query_geo_locations,
 )
+from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info as _get_city_info
-from openaddrbr.services._cep import search_by_cep, is_multi_street_cep
 from openaddrbr.services._encoder import _encode_street
 from openaddrbr.services._vector_search import _search_by_embedding
 from openaddrbr.utils import normalize_text, text_similarity

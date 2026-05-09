@@ -3,10 +3,9 @@ Tests for search_vector method using IBGEGeocoder.
 Returns list of unique street_normalized names.
 """
 
-import pytest
 import numpy as np
+import pytest
 from sentence_transformers import SentenceTransformer
-
 
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"
 

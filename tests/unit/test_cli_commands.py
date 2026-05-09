@@ -1,6 +1,7 @@
 """Tests for CLI commands."""
 
 import pytest
+
 from openaddrbr.cli._commands import _update_env_file
 
 

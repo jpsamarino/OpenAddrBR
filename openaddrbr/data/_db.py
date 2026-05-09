@@ -3,12 +3,11 @@
 import array
 import threading
 from functools import lru_cache
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import apsw
 
 from openaddrbr.data._config import get_sgeodb_path
-from typing import NamedTuple
 
 
 class CityRecord(NamedTuple):

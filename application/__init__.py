@@ -1,17 +1,21 @@
 """Compatibility shim - wraps function-based API into class."""
 
 from openaddrbr import geocode as _geocode
-from openaddrbr.services._city import get_city_info as _get_city_info
-from openaddrbr.services._cep import (
-    search_by_cep as _search_by_cep,
-    is_multi_street_cep as _is_multi_street_cep,
+from openaddrbr.core.models import StreetCluster
+from openaddrbr.data import (
+    get_connection,
+    query_street_query,
 )
 from openaddrbr.data import (
     search_vector as _search_vector_index,
-    query_street_query,
-    get_connection,
 )
-from openaddrbr.core.models import StreetCluster
+from openaddrbr.services._cep import (
+    is_multi_street_cep as _is_multi_street_cep,
+)
+from openaddrbr.services._cep import (
+    search_by_cep as _search_by_cep,
+)
+from openaddrbr.services._city import get_city_info as _get_city_info
 
 
 class IBGEGeocoder:

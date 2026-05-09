@@ -8,12 +8,13 @@ Usage:
 
 import json
 import os
-import psutil
 from pathlib import Path
 
+import psutil
+
+from openaddrbr.data._config import get_usearch_dir
 from openaddrbr.data._db import get_city_info_from_db
 from openaddrbr.data._usearch import get_semantic_index
-from openaddrbr.data._config import get_usearch_dir
 
 
 def get_city_codes(limit=None):

@@ -5,6 +5,7 @@ Captured values from geocoder runs — update when behavior changes.
 """
 
 import pytest
+
 from application import IBGEGeocoder
 
 

@@ -13,8 +13,8 @@ import torch
 from openaddrbr.data import check_data_exists, download_data, get_data_path
 from openaddrbr.services._encoder import (
     VALID_BACKENDS,
-    configure_encoder,
     _encode_streets_batch,
+    configure_encoder,
 )
 
 

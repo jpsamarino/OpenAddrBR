@@ -7,15 +7,15 @@ Run with each backend:
     pytest tests/unit/test_encoder.py -v -k pytorch-compiled   # only compiled
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from openaddrbr.services._encoder import (
-    configure_encoder,
+    VALID_BACKENDS,
     _encode_street,
     _encode_streets_batch,
-    VALID_BACKENDS,
+    configure_encoder,
 )
-
 
 # All backends except cuda (no GPU in CI)
 BACKENDS_UNDER_TEST = tuple(b for b in VALID_BACKENDS if b != "cuda")

@@ -1,8 +1,9 @@
 """Address matching utilities."""
 
 from rapidfuzz import fuzz
-from openaddrbr.utils._text import text_to_ascii
+
 from openaddrbr.core.models import StreetCluster
+from openaddrbr.utils._text import text_to_ascii
 
 
 def text_similarity(

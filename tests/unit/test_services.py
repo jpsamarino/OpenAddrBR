@@ -1,8 +1,10 @@
 """Tests for services - TDD approach."""
 
-import pytest
 from unittest.mock import MagicMock, patch
-from openaddrbr.core.models import CityInfo, StreetCluster, AddressRequest
+
+import pytest
+
+from openaddrbr.core.models import AddressRequest, CityInfo, StreetCluster
 from openaddrbr.data._db import AddressRecord, CityRecord
 
 

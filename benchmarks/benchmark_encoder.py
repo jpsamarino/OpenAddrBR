@@ -5,8 +5,8 @@ Encoder benchmark - measure throughput for _encode_street and _encode_streets_ba
 import argparse
 import json
 import time
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 from openaddrbr.services._encoder import _encode_street, _encode_streets_batch
 from openaddrbr.utils import normalize_text
