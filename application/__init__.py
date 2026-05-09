@@ -1,11 +1,5 @@
 """Compatibility shim - wraps function-based API into class."""
 
-import sys
-from pathlib import Path
-
-# Add openaddrbr to path
-sys.path.insert(0, str(Path(__file__).parent))
-
 from openaddrbr import geocode as _geocode
 from openaddrbr.services._city import get_city_info as _get_city_info
 from openaddrbr.services._cep import search_by_cep as _search_by_cep, is_multi_street_cep as _is_multi_street_cep
