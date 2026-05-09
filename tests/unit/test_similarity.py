@@ -2,11 +2,6 @@
 Tests for similarity utilities.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 from utils.similarity import text_similarity, make_similarity_func
 from utils.text_to_ascii import text_to_ascii

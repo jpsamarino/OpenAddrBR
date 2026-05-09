@@ -1,11 +1,5 @@
 """Tests for text utilities - TDD approach."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-sys.path.insert(0, "d:/projetos/OpenAddrBR")
-
 import pytest
 from openaddrbr.utils._text import text_to_ascii, normalize_text
 from openaddrbr.utils._matching import text_similarity, find_best_street_match

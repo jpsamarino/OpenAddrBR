@@ -1,10 +1,5 @@
 """Tests for CLI commands."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 from openaddrbr.cli._commands import _update_env_file
 

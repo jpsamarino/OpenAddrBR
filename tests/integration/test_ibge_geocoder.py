@@ -4,11 +4,6 @@ All 49 tests with full field-level assertions.
 Captured values from geocoder runs — update when behavior changes.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 from application import IBGEGeocoder
 

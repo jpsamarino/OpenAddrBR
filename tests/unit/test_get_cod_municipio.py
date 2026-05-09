@@ -2,11 +2,6 @@
 Tests for get_city_code using IBGEGeocoder.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 from application import IBGEGeocoder
 

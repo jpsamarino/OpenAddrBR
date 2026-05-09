@@ -1,11 +1,5 @@
 """Tests for services - TDD approach."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-sys.path.insert(0, "d:/projetos/OpenAddrBR")
-
 import pytest
 from unittest.mock import MagicMock, patch
 from openaddrbr.core.models import CityInfo, StreetCluster, AddressRequest

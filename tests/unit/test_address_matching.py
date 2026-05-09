@@ -2,11 +2,6 @@
 Tests for address_matching utilities - Complex realistic scenarios.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 from utils.address_matching import find_best_street_match
 from utils.similarity import text_similarity

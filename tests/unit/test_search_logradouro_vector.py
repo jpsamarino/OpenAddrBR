@@ -3,11 +3,6 @@ Tests for search_vector method using IBGEGeocoder.
 Returns list of unique street_normalized names.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import pytest
 import numpy as np
 from sentence_transformers import SentenceTransformer
