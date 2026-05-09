@@ -12,6 +12,7 @@ def get_connection() -> sqlite3.Connection:
     global _conn
     if _conn is None:
         from openaddrbr.data._config import get_sgeodb_path
+
         db_path = get_sgeodb_path()
         if not db_path.exists():
             raise FileNotFoundError(

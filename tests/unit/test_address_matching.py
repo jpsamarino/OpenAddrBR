@@ -73,7 +73,9 @@ class TestFindBestStreetMatchComplex:
         clusters = [
             make_cluster(1, ["RUA DAS FLORES"], ["JARDIM"]),
         ]
-        result = find_best_street_match(clusters, "AVENIDA BRASIL", "CENTRO", min_street_similarity=0.7)
+        result = find_best_street_match(
+            clusters, "AVENIDA BRASIL", "CENTRO", min_street_similarity=0.7
+        )
         assert result is None
 
     def test_real_scenario_street_match_neighborhood_no_match(self):
@@ -81,7 +83,9 @@ class TestFindBestStreetMatchComplex:
         clusters = [
             make_cluster(1, ["AVENIDA PAULISTA"], ["JARDIM PAULISTA"]),
         ]
-        result = find_best_street_match(clusters, "RUA DAS FLORES", "CENTRO", min_street_similarity=0.7)
+        result = find_best_street_match(
+            clusters, "RUA DAS FLORES", "CENTRO", min_street_similarity=0.7
+        )
         assert result is None
 
     def test_real_scenario_none_ref_neighborhood(self):
@@ -123,7 +127,9 @@ class TestFindBestStreetMatchComplex:
     def test_real_scenario_cluster_with_empty_street_set(self):
         """Edge case: cluster with empty street_normalized set."""
         clusters = [
-            StreetCluster(street_id=1, street_normalized=set(), neighborhood_normalized={"BELA VISTA"}),
+            StreetCluster(
+                street_id=1, street_normalized=set(), neighborhood_normalized={"BELA VISTA"}
+            ),
         ]
         result = find_best_street_match(clusters, "AVENIDA PAULISTA", "BELA VISTA")
         assert result is None
@@ -145,8 +151,11 @@ class TestFindBestStreetMatchComplex:
             make_cluster(1, ["RUA DAS FLORES"], ["JARDIM"]),
         ]
         result = find_best_street_match(
-            clusters, "AVENIDA TOTALLY DIFFERENT", "CENTRO",
-            min_street_similarity=0.3, min_neighborhood_similarity=0.3
+            clusters,
+            "AVENIDA TOTALLY DIFFERENT",
+            "CENTRO",
+            min_street_similarity=0.3,
+            min_neighborhood_similarity=0.3,
         )
         assert result is None
 

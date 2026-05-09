@@ -17,9 +17,7 @@ from application import IBGEGeocoder
 # --- Config ---
 DATA_PATH = Path(__file__).parent / "google_ref_lat_long.json"
 BATCH_SIZE = 1000  # how many addresses to process before printing progress
-INTERNAL_BATCH_SIZE = (
-    32  # how many addresses the IBGE geocoder processes per call (max 32)
-)
+INTERNAL_BATCH_SIZE = 32  # how many addresses the IBGE geocoder processes per call (max 32)
 WORST_N = 100  # number of worst matches to export to file
 QT_ITEMS = 4000  # max number of items to process (set to None for all)
 
@@ -36,10 +34,7 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dphi / 2) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    )
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
@@ -82,14 +77,11 @@ def run_geocoding(addresses: list[tuple[int, AddressRequest]], coder):
     start_time = time.perf_counter()
 
     for i in range(0, len(addresses), BATCH_SIZE):
-
         batch_tuple = addresses[i : i + BATCH_SIZE]
         batch_addr = [a for _, a in batch_tuple]
         batch_idx = [idx for idx, _ in batch_tuple]
         chunk_start = time.perf_counter()
-        ibge_results = coder.get_geo_info_batch(
-            batch_addr, batch_size=INTERNAL_BATCH_SIZE
-        )
+        ibge_results = coder.get_geo_info_batch(batch_addr, batch_size=INTERNAL_BATCH_SIZE)
         chunk_elapsed = time.perf_counter() - chunk_start
         for idx, ibge_res in zip(batch_idx, ibge_results):
             results[idx] = {"ibge": ibge_res}
@@ -103,9 +95,7 @@ def run_geocoding(addresses: list[tuple[int, AddressRequest]], coder):
     return results, elapsed
 
 
-def compute_statistics(
-    records: list[dict], results: list[dict], elapsed: float
-) -> dict:
+def compute_statistics(records: list[dict], results: list[dict], elapsed: float) -> dict:
     has_ibge = 0
     no_ibge = 0
     distances: list[float] = []
@@ -136,9 +126,7 @@ def compute_statistics(
         distances.append(dist)
 
         street_sims.append(
-            text_similarity_score(
-                ibge.street_name or "", rec.get("place", {}).get("street", "")
-            )
+            text_similarity_score(ibge.street_name or "", rec.get("place", {}).get("street", ""))
         )
         neighborhood_sims.append(
             text_similarity_score(
@@ -146,9 +134,7 @@ def compute_statistics(
             )
         )
         zip_code_sims.append(
-            text_similarity_score(
-                ibge.zip_code or "", rec.get("place", {}).get("zip_code", "")
-            )
+            text_similarity_score(ibge.zip_code or "", rec.get("place", {}).get("zip_code", ""))
         )
 
     total = len(records)
@@ -173,12 +159,8 @@ def print_report(stats: dict) -> None:
 
     total = stats["total"]
     print(f"\nTotal records:    {total}")
-    print(
-        f"Got IBGE result:  {stats['has_ibge']} ({stats['has_ibge'] / total * 100:.1f}%)"
-    )
-    print(
-        f"No IBGE result:   {stats['no_ibge']} ({stats['no_ibge'] / total * 100:.1f}%)"
-    )
+    print(f"Got IBGE result:  {stats['has_ibge']} ({stats['has_ibge'] / total * 100:.1f}%)")
+    print(f"No IBGE result:   {stats['no_ibge']} ({stats['no_ibge'] / total * 100:.1f}%)")
 
     print(f"\n[Performance]")
     print(f"  Total time:     {stats['elapsed']:.2f}s")
@@ -197,9 +179,7 @@ def print_report(stats: dict) -> None:
         print(f"  Mean:   {avg_dist:.1f}")
         print(f"  Median: {median_dist:.1f}")
         print(f"  Max:    {max_dist:.1f}")
-        print(
-            f"  <=100m:  {within_100m} ({within_100m / stats['has_ibge'] * 100:.1f}%)"
-        )
+        print(f"  <=100m:  {within_100m} ({within_100m / stats['has_ibge'] * 100:.1f}%)")
         print(f"  <=1km:   {within_1km} ({within_1km / stats['has_ibge'] * 100:.1f}%)")
 
     street_sims = stats["street_sims"]
@@ -230,21 +210,13 @@ def build_ranked_list(
                 go = float(rec["longitude"])
                 if gl and go:
                     dist = haversine(gl, go, ibge.lat, ibge.long)
-                    si = (
-                        street_sims[len(ranked)]
-                        if len(ranked) < len(street_sims)
-                        else 0.0
-                    )
+                    si = street_sims[len(ranked)] if len(ranked) < len(street_sims) else 0.0
                     ni = (
                         neighborhood_sims[len(ranked)]
                         if len(ranked) < len(neighborhood_sims)
                         else 0.0
                     )
-                    zi = (
-                        zip_code_sims[len(ranked)]
-                        if len(ranked) < len(zip_code_sims)
-                        else 0.0
-                    )
+                    zi = zip_code_sims[len(ranked)] if len(ranked) < len(zip_code_sims) else 0.0
                     ranked.append((i, dist, si, ni, zi))
             except Exception:
                 pass
@@ -278,7 +250,7 @@ def main():
     worst_n = ranked[:WORST_N]
 
     # Save worst matches to file
-    output_file =  DATA_PATH.parent.parent/ "data" / f"worst_matches_{WORST_N}.json"
+    output_file = DATA_PATH.parent.parent / "data" / f"worst_matches_{WORST_N}.json"
     save_worst_matches(worst_n, records, results, output_file)
 
 

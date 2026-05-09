@@ -14,7 +14,9 @@ class TestCityService:
         from openaddrbr.services._city import get_city_info
 
         with patch("openaddrbr.services._city.get_city_info_from_db") as mock_db:
-            mock_db.return_value = CityRecord(city_code=3550308, city_name="São Paulo", state_code="SP")
+            mock_db.return_value = CityRecord(
+                city_code=3550308, city_name="São Paulo", state_code="SP"
+            )
 
             result = get_city_info("São Paulo", "SP")
             assert result is not None
@@ -42,7 +44,11 @@ class TestCEPService:
 
         with patch("openaddrbr.services._cep.query_address_by_cep") as mock_query:
             mock_query.return_value = [
-                AddressRecord(street_id=1, street_normalized="AVENIDA PAULISTA", neighborhood_normalized="BELA VISTA"),
+                AddressRecord(
+                    street_id=1,
+                    street_normalized="AVENIDA PAULISTA",
+                    neighborhood_normalized="BELA VISTA",
+                ),
             ]
 
             result = search_by_cep("01310000", "AVENIDA PAULISTA", "BELA VISTA")
@@ -97,7 +103,9 @@ class TestGeocodeService:
             mock_check.return_value = True
 
             with patch("openaddrbr.services._geocode._get_city_info") as mock_city:
-                mock_city.return_value = CityInfo(city_code=3550308, city_name="São Paulo", state_code="SP")
+                mock_city.return_value = CityInfo(
+                    city_code=3550308, city_name="São Paulo", state_code="SP"
+                )
 
                 with patch("openaddrbr.services._geocode.is_multi_street_cep") as mock_multi:
                     mock_multi.return_value = False
@@ -108,7 +116,9 @@ class TestGeocodeService:
                         with patch("openaddrbr.services._geocode._encode_street") as mock_encode:
                             mock_encode.return_value = None  # No encoding
 
-                            with patch("openaddrbr.services._geocode._search_by_embedding") as mock_emb:
+                            with patch(
+                                "openaddrbr.services._geocode._search_by_embedding"
+                            ) as mock_emb:
                                 mock_emb.return_value = None  # No embedding match
 
                                 result = geocode("rua das flores", "centro", "São Paulo", "SP")

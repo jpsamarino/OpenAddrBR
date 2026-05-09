@@ -5,6 +5,7 @@ Measures REAL RAM usage (RSS) using psutil.
 Usage:
     python benchmarks/benchmark_memory.py
 """
+
 import json
 import os
 import psutil

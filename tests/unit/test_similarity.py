@@ -74,9 +74,7 @@ class TestTextSimilarity:
 
     def test_case_insensitive(self):
         """Case insensitive comparison gives high similarity."""
-        result = text_similarity(
-            "AVENIDA PAULISTA", "avenida paulist", case_sensitive=False
-        )
+        result = text_similarity("AVENIDA PAULISTA", "avenida paulist", case_sensitive=False)
         assert result >= 0.9
 
     def test_ascii_normalization(self):
@@ -86,9 +84,7 @@ class TestTextSimilarity:
 
     def test_ascii_and_case_insensitive(self):
         """ASCII and case insensitive gives high similarity for accent differences."""
-        result = text_similarity(
-            "SÃO PAULO", "sao paulo", case_sensitive=False, ascii=True
-        )
+        result = text_similarity("SÃO PAULO", "sao paulo", case_sensitive=False, ascii=True)
         assert result >= 0.9
 
     def test_token_ratio_favors_suffix_match(self):
@@ -113,9 +109,7 @@ class TestTextSimilarity:
         ratio2 = text_similarity(s1, s2b)
 
         # token_ratio favors suffix matches - counterintuitive but expected behavior
-        assert (
-            ratio2 > ratio1
-        ), "token_ratio should favor suffix matches (known behavior)"
+        assert ratio2 > ratio1, "token_ratio should favor suffix matches (known behavior)"
         assert ratio1 < 0.7, "PEDRO FERNANDES vs PEDRO CUSTODIO should be < 0.7"
         assert ratio2 > 0.7, "PEDRO FERNANDES vs JOSE GASPAR FERNANDES should be > 0.7"
 

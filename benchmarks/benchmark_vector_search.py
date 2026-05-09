@@ -17,13 +17,12 @@ from openaddrbr.services._vector_search import _search_by_embedding
 from openaddrbr.utils import normalize_text
 
 
-def load_addresses(
-    path: Path, limit: int, city_filter: str | None = None
-) -> list[dict]:
+def load_addresses(path: Path, limit: int, city_filter: str | None = None) -> list[dict]:
     with open(path, "r", encoding="utf-8") as f:
         records = json.load(f)
 
     import random
+
     random.shuffle(records)
 
     addresses = []
@@ -43,18 +42,14 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     items = []
     for rec in addresses:
         place = rec.get("place") or {}
-        city_info = get_city_info_from_db(
-            place.get("city", ""), place.get("state", "")
-        )
+        city_info = get_city_info_from_db(place.get("city", ""), place.get("state", ""))
         if not city_info:
             continue
 
         items.append(
             {
                 "street_norm": normalize_text(place.get("street", "")),
-                "neighborhood_norm": normalize_text(
-                    place.get("neighborhood", "")
-                ),
+                "neighborhood_norm": normalize_text(place.get("neighborhood", "")),
                 "city_code": city_info.city_code,
             }
         )
@@ -71,9 +66,7 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     embeddings = []
     for i in range(0, len(items), batch_size):
         batch = items[i : i + batch_size]
-        emb_batch = _encode_streets_batch(
-            [x["street_norm"] for x in batch], batch_size=batch_size
-        )
+        emb_batch = _encode_streets_batch([x["street_norm"] for x in batch], batch_size=batch_size)
         embeddings.extend(emb_batch)
     encode_elapsed = time.perf_counter() - encode_start
 
@@ -113,18 +106,10 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Encode + Vector Search benchmark")
-    parser.add_argument(
-        "--limit", type=int, default=1000, help="Max addresses (default: 1000)"
-    )
-    parser.add_argument(
-        "--batch-size", type=int, default=32, help="Batch size (default: 32)"
-    )
-    parser.add_argument(
-        "--city", type=str, default=None, help="Filter by city (e.g., SAO PAULO)"
-    )
-    parser.add_argument(
-        "--all", action="store_true", help="Run all city tests"
-    )
+    parser.add_argument("--limit", type=int, default=1000, help="Max addresses (default: 1000)")
+    parser.add_argument("--batch-size", type=int, default=32, help="Batch size (default: 32)")
+    parser.add_argument("--city", type=str, default=None, help="Filter by city (e.g., SAO PAULO)")
+    parser.add_argument("--all", action="store_true", help="Run all city tests")
     args = parser.parse_args()
 
     data_path = Path(__file__).parent / "google_ref_lat_long.json"
@@ -162,7 +147,9 @@ def main():
         tests.append((city_name, stats))
 
     # Header
-    print(f"{'Test':<20} | {'Items':>6} | {'Encode':>10} | {'Search':>10} | {'Total':>10} | {'Found':>7}")
+    print(
+        f"{'Test':<20} | {'Items':>6} | {'Encode':>10} | {'Search':>10} | {'Total':>10} | {'Found':>7}"
+    )
     print("-" * 70)
 
     for name, stats in tests:

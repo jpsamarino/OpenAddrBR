@@ -8,7 +8,9 @@ import random
 import sqlite3
 from pathlib import Path
 
-SGEODB_PATH = "D:/projetos/SD-External-Data/Scripts-Scraping/Get-Lat-Long/ibge_cnefe_v2/data/sgeobr.db"
+SGEODB_PATH = (
+    "D:/projetos/SD-External-Data/Scripts-Scraping/Get-Lat-Long/ibge_cnefe_v2/data/sgeobr.db"
+)
 BENCHMARKS_DIR = Path(__file__).parent
 BENCHMARKS_DIR.mkdir(exist_ok=True)
 
@@ -17,7 +19,9 @@ BATCH_SIZE = 10000
 
 def sample_col(table: str, col: str, where: str = "1=1", limit: int = BATCH_SIZE):
     conn = sqlite3.connect(SGEODB_PATH)
-    rows = conn.execute(f"SELECT {col} FROM {table} WHERE {where} ORDER BY RANDOM() LIMIT ?", (limit,)).fetchall()
+    rows = conn.execute(
+        f"SELECT {col} FROM {table} WHERE {where} ORDER BY RANDOM() LIMIT ?", (limit,)
+    ).fetchall()
     conn.close()
     return [r[0] for r in rows]
 
@@ -39,35 +43,49 @@ def main():
 
     # 2. is_multi_street_cep: [zip_code, ...]
     print("[2/8] is_multi_street_cep")
-    save_json("is_multi_street_cep.json", sample_col(
-        "address", "zip_code", "zip_code IN (SELECT zip_code FROM multi_street_ceps)", BATCH_SIZE
-    ))
+    save_json(
+        "is_multi_street_cep.json",
+        sample_col(
+            "address",
+            "zip_code",
+            "zip_code IN (SELECT zip_code FROM multi_street_ceps)",
+            BATCH_SIZE,
+        ),
+    )
 
     # 3. fetch_address_by_cep: [zip_code, ...]
     print("[3/8] fetch_address_by_cep")
-    save_json("fetch_address_by_cep.json", sample_col(
-        "address", "zip_code", "zip_code IS NOT NULL AND zip_code != ''", BATCH_SIZE
-    ))
+    save_json(
+        "fetch_address_by_cep.json",
+        sample_col("address", "zip_code", "zip_code IS NOT NULL AND zip_code != ''", BATCH_SIZE),
+    )
 
     # 4. fetch_address_by_street_id: [street_id, ...]
     print("[4/8] fetch_address_by_street_id")
-    save_json("fetch_address_by_street_id.json", sample_col(
-        "address", "street_id", "street_id IS NOT NULL", BATCH_SIZE
-    ))
+    save_json(
+        "fetch_address_by_street_id.json",
+        sample_col("address", "street_id", "street_id IS NOT NULL", BATCH_SIZE),
+    )
 
     # 5. fetch_geo_location: [{"street_id": x, "number": y}, ...]
     print("[5/8] fetch_geo_location")
     conn = sqlite3.connect(SGEODB_PATH)
     conn.row_factory = sqlite3.Row
-    rows = conn.execute("""
+    rows = conn.execute(
+        """
         SELECT street_id, address_number as number
         FROM geo_locations
         WHERE street_id IS NOT NULL
         ORDER BY RANDOM()
         LIMIT ?
-    """, (BATCH_SIZE,)).fetchall()
+    """,
+        (BATCH_SIZE,),
+    ).fetchall()
     conn.close()
-    save_json("fetch_geo_location.json", [{"street_id": r["street_id"], "number": r["number"]} for r in rows])
+    save_json(
+        "fetch_geo_location.json",
+        [{"street_id": r["street_id"], "number": r["number"]} for r in rows],
+    )
 
     # 6. fetch_street_by_query_ids: [[query_id1, query_id2, ...], city_code]
     print("[6/8] fetch_street_by_query_ids")
@@ -88,8 +106,7 @@ def main():
             break
         # Get all query_ids for this city and sample different subsets
         ids = conn.execute(
-            "SELECT query_id FROM street_query WHERE city_code = ?",
-            (cc,)
+            "SELECT query_id FROM street_query WHERE city_code = ?", (cc,)
         ).fetchall()
         if not ids:
             continue

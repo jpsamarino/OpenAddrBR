@@ -21,10 +21,7 @@ def test_update_env_file_preserves_existing_content(tmp_path):
     """Test updating existing .env without deleting other content."""
     env_path = tmp_path / ".env"
     env_path.write_text(
-        "DATABASE_URL=postgres://localhost/db\n"
-        "OTHER_VAR=value\n"
-        "OPENADDRBR_BACKEND=onnx\n"
-        "\n",
+        "DATABASE_URL=postgres://localhost/db\nOTHER_VAR=value\nOPENADDRBR_BACKEND=onnx\n\n",
         encoding="utf-8",
     )
 
@@ -54,8 +51,7 @@ def test_update_env_file_updates_existing_var(tmp_path):
     """Test updating existing OPENADDRBR_BACKEND."""
     env_path = tmp_path / ".env"
     env_path.write_text(
-        "OPENADDRBR_BACKEND=onnx-int8\n"
-        "OPENADDRBR_BATCH_SIZE=8\n",
+        "OPENADDRBR_BACKEND=onnx-int8\nOPENADDRBR_BATCH_SIZE=8\n",
         encoding="utf-8",
     )
 

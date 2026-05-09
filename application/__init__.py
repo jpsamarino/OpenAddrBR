@@ -2,8 +2,15 @@
 
 from openaddrbr import geocode as _geocode
 from openaddrbr.services._city import get_city_info as _get_city_info
-from openaddrbr.services._cep import search_by_cep as _search_by_cep, is_multi_street_cep as _is_multi_street_cep
-from openaddrbr.data import search_vector as _search_vector_index, query_street_query, get_connection
+from openaddrbr.services._cep import (
+    search_by_cep as _search_by_cep,
+    is_multi_street_cep as _is_multi_street_cep,
+)
+from openaddrbr.data import (
+    search_vector as _search_vector_index,
+    query_street_query,
+    get_connection,
+)
 from openaddrbr.core.models import StreetCluster
 
 
@@ -43,6 +50,7 @@ class IBGEGeocoder:
 
     def get_geo_info_batch(self, addresses, batch_size=16):
         from openaddrbr import get_geo_info_batch as _batch
+
         return _batch(addresses, batch_size)
 
     def close(self):

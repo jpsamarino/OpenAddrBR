@@ -56,7 +56,7 @@ def benchmark_fn_sync(name: str, fn, data: list, warmup_runs: int = 3) -> Benchm
 
     # Warmup
     for _ in range(warmup_runs):
-        for item in data[:min(100, count)]:
+        for item in data[: min(100, count)]:
             fn(item)
 
     # Benchmark
@@ -78,7 +78,9 @@ def benchmark_fn_sync(name: str, fn, data: list, warmup_runs: int = 3) -> Benchm
 
 
 def print_result(r: BenchmarkResult):
-    print(f"  {r.name:<40} | {r.ns_per_query:>10.0f} ns/q | {r.queries_per_sec:>8.0f} qps | {r.count:>6,}x")
+    print(
+        f"  {r.name:<40} | {r.ns_per_query:>10.0f} ns/q | {r.queries_per_sec:>8.0f} qps | {r.count:>6,}x"
+    )
 
 
 def run_benchmarks(name: str, impl: dict, data_dir: Path):
@@ -107,35 +109,63 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
 
     results = []
 
-    r = benchmark_fn_sync("get_city_info", lambda p: impl["get_city_info"](p[0], p[1]), datasets["get_city_info"])
+    r = benchmark_fn_sync(
+        "get_city_info", lambda p: impl["get_city_info"](p[0], p[1]), datasets["get_city_info"]
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("is_multi_street_cep", lambda p: impl["is_multi_street_cep"](p), datasets["is_multi_street_cep"])
+    r = benchmark_fn_sync(
+        "is_multi_street_cep",
+        lambda p: impl["is_multi_street_cep"](p),
+        datasets["is_multi_street_cep"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_address_by_cep", lambda p: impl["query_address_by_cep"](str(p), limit=10), datasets["fetch_address_by_cep"])
+    r = benchmark_fn_sync(
+        "fetch_address_by_cep",
+        lambda p: impl["query_address_by_cep"](str(p), limit=10),
+        datasets["fetch_address_by_cep"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_address_by_street_id", lambda p: impl["query_full_address_by_street_id"](p), datasets["fetch_address_by_street_id"])
+    r = benchmark_fn_sync(
+        "fetch_address_by_street_id",
+        lambda p: impl["query_full_address_by_street_id"](p),
+        datasets["fetch_address_by_street_id"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_geo_location", lambda p: impl["query_geo_locations"](p["street_id"], p["number"], limit=3), datasets["fetch_geo_location"])
+    r = benchmark_fn_sync(
+        "fetch_geo_location",
+        lambda p: impl["query_geo_locations"](p["street_id"], p["number"], limit=3),
+        datasets["fetch_geo_location"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_street_by_query_ids", lambda p: impl["query_street_query"](p[0], p[1]), datasets["fetch_street_by_query_ids"])
+    r = benchmark_fn_sync(
+        "fetch_street_by_query_ids",
+        lambda p: impl["query_street_query"](p[0], p[1]),
+        datasets["fetch_street_by_query_ids"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_address_by_street_names", lambda p: impl["query_address_by_street_names"](p[0], p[1]), datasets["fetch_address_by_street_names"])
+    r = benchmark_fn_sync(
+        "fetch_address_by_street_names",
+        lambda p: impl["query_address_by_street_names"](p[0], p[1]),
+        datasets["fetch_address_by_street_names"],
+    )
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync("fetch_query_ids", lambda p: impl["query_query_ids"](p), datasets["fetch_query_ids"])
+    r = benchmark_fn_sync(
+        "fetch_query_ids", lambda p: impl["query_query_ids"](p), datasets["fetch_query_ids"]
+    )
     results.append(r)
     print_result(r)
 
@@ -201,7 +231,9 @@ def main():
         best = min(times, key=times.get)
         speedup = max(times.values()) / min(times.values())
 
-        print(f"  {r_sql.name:<40} | {r_sql.ns_per_query:>12.0f}ns | {r_apsw.ns_per_query:>12.0f}ns | {best} ({speedup:.1f}x)")
+        print(
+            f"  {r_sql.name:<40} | {r_sql.ns_per_query:>12.0f}ns | {r_apsw.ns_per_query:>12.0f}ns | {best} ({speedup:.1f}x)"
+        )
 
     print()
     print("=" * 85)

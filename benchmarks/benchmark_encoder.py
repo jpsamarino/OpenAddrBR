@@ -40,7 +40,7 @@ def benchmark_single(name: str, fn, data: list[str], warmup_runs: int = 3) -> Be
 
     # Warmup
     for _ in range(warmup_runs):
-        for item in data[:min(100, count)]:
+        for item in data[: min(100, count)]:
             fn(item)
 
     # Benchmark
@@ -142,9 +142,7 @@ def main():
     for batch_size in batch_sizes:
         # Skip if batch_size > data length
         if batch_size > len(street_norms):
-            print(
-                f"  _encode_streets_batch (bs={batch_size:<3}) | skipped (data too small)"
-            )
+            print(f"  _encode_streets_batch (bs={batch_size:<3}) | skipped (data too small)")
             continue
 
         name = f"_encode_streets_batch (bs={batch_size})"
