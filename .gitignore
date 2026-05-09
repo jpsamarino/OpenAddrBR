@@ -94,5 +94,9 @@ Thumbs.db
 # Superpowers (temporary specs/plans, not for commit)
 docs/superpowers/
 
+# Git worktrees
+.worktrees/
+worktrees/
+
 # Claude (session-specific, not for commit)
 .claude/
