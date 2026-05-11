@@ -20,6 +20,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "cachetools>=5.3",
     "usearch",
     "sentence-transformers",
     "numpy",
