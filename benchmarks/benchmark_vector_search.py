@@ -11,9 +11,9 @@ import time
 from io import StringIO
 from pathlib import Path
 
-from openaddrbr.data._db import get_city_info_from_db
-from openaddrbr.services._encoder import _encode_streets_batch
-from openaddrbr.services._vector_search import _search_by_embedding
+from openaddrbr.core._encoder import Encoder
+from openaddrbr.core._database import Database
+from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text
 
 
@@ -39,10 +39,13 @@ def load_addresses(path: Path, limit: int, city_filter: str | None = None) -> li
 
 
 def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
+    db = Database()
+    encoder = Encoder()
+
     items = []
     for rec in addresses:
         place = rec.get("place") or {}
-        city_info = get_city_info_from_db(place.get("city", ""), place.get("state", ""))
+        city_info = db.get_city_info_from_db(place.get("city", ""), place.get("state", ""))
         if not city_info:
             continue
 
@@ -66,7 +69,7 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     embeddings = []
     for i in range(0, len(items), batch_size):
         batch = items[i : i + batch_size]
-        emb_batch = _encode_streets_batch([x["street_norm"] for x in batch], batch_size=batch_size)
+        emb_batch = encoder.encode_batch([x["street_norm"] for x in batch], batch_size=batch_size)
         embeddings.extend(emb_batch)
     encode_elapsed = time.perf_counter() - encode_start
 
@@ -76,11 +79,12 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     search_start = time.perf_counter()
     results = []
     for i, item in enumerate(items):
-        cluster = _search_by_embedding(
+        cluster = search_by_embedding(
             item["city_code"],
             embeddings[i],
             item["street_norm"],
             item["neighborhood_norm"],
+            db=db,
         )
         results.append(cluster is not None)
     search_elapsed = time.perf_counter() - search_start
