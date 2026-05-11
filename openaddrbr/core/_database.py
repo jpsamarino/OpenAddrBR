@@ -9,6 +9,7 @@ import apsw
 from cachetools import LRUCache
 
 from openaddrbr.core._env import get_default_data_path, get_sgeodb_path
+from openaddrbr.utils import normalize_text
 
 
 class CityRecord(NamedTuple):
@@ -89,8 +90,6 @@ class Database:
     # ---- Query methods ----
 
     def get_city_info_from_db(self, city_name: str, state_code: str) -> CityRecord | None:
-        from openaddrbr.utils import normalize_text
-
         key = (city_name, state_code.upper().strip())
         if key in self._city_cache:
             return self._city_cache[key]

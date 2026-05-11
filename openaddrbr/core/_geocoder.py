@@ -15,6 +15,7 @@ from openaddrbr.core.models import (
 )
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info
+from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text, text_similarity
 
 
@@ -86,8 +87,6 @@ class Geocoder:
         if not street_cluster:
             embedding = self.encoder.encode(street_norm)
             if embedding is not None:
-                from openaddrbr.services._vector_search import search_by_embedding
-
                 street_cluster = search_by_embedding(
                     city_info.city_code, embedding, street_norm, neighborhood_norm, db=self.db
                 )
@@ -170,8 +169,6 @@ class Geocoder:
                     )
 
                 if not cluster and embedding is not None:
-                    from openaddrbr.services._vector_search import search_by_embedding
-
                     cluster = search_by_embedding(
                         addr.city_info.city_code,
                         embedding,

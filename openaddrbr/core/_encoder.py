@@ -1,7 +1,6 @@
 """Encoder — sentence transformer model management."""
 
 import logging
-import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -11,7 +10,7 @@ import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 
-from openaddrbr.core._env import get_default_backend, get_model_path
+from openaddrbr.core._env import get_default_backend, get_default_batch_size, get_model_path
 
 # Silence spurious tokenizer warnings
 for _logger_name in ["transformers", "sentence_transformers", "onnxruntime", "optimum"]:
@@ -154,5 +153,5 @@ class Encoder:
         if not texts:
             return []
         if batch_size is None:
-            batch_size = int(os.environ.get("OPENADDRBR_BATCH_SIZE", 16))
+            batch_size = get_default_batch_size()
         return self._get_model().encode(texts, batch_size=batch_size, show_progress_bar=False)

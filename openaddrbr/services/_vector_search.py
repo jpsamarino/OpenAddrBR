@@ -3,16 +3,18 @@
 import numpy as np
 
 from openaddrbr.core.models import StreetCluster
+from openaddrbr.data import search_vector as search_vector_index
 from openaddrbr.utils import find_best_street_match
 
 
-def _fetch_clusters_by_street_names(street_names: list[str], city_code: int) -> list[StreetCluster]:
+def _fetch_clusters_by_street_names(
+    street_names: list[str], city_code: int, db
+) -> list[StreetCluster]:
     """Fetch and build street clusters from normalized street names."""
     if not street_names:
         return []
-    from openaddrbr.data import query_address_by_street_names
 
-    rows = query_address_by_street_names(street_names, city_code)
+    rows = db.query_address_by_street_names(street_names, city_code)
     if not rows:
         return []
 
@@ -39,8 +41,6 @@ def search_by_embedding(
     """Search by complete address using vector search + exact SQL."""
     if embedding is None or street_norm is None:
         return None
-
-    from openaddrbr.data import search_vector as search_vector_index
 
     query_ids = search_vector_index(embedding, city_code, limit=20)
     if not query_ids:
