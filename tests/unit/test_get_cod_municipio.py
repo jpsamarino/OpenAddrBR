@@ -1,75 +1,83 @@
-"""
-Tests for get_city_code using IBGEGeocoder.
-"""
+"""Tests for get_city_code using Geocoder."""
 
 import pytest
 
-from application import IBGEGeocoder
+from openaddrbr import Geocoder
 
 
 @pytest.fixture
-def coder():
-    """Coder instance for testing."""
-    return IBGEGeocoder()
+def geocoder():
+    """Geocoder instance for testing."""
+    return Geocoder()
 
 
 class TestGetCityCode:
-    """Tests for get_city_info."""
+    """Tests for get_city_info via Geocoder.db."""
 
-    def test_sao_paulo(self, coder):
+    def test_sao_paulo(self, geocoder):
         """Testa busca por São Paulo."""
-        result = coder.get_city_info("São Paulo", "SP")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("São Paulo", "SP", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3550308
 
-    def test_rio_de_janeiro(self, coder):
+    def test_rio_de_janeiro(self, geocoder):
         """Testa busca por Rio de Janeiro."""
-        result = coder.get_city_info("Rio de Janeiro", "RJ")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("Rio de Janeiro", "RJ", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3304557
 
-    def test_belo_horizonte(self, coder):
+    def test_belo_horizonte(self, geocoder):
         """Testa busca por Belo Horizonte."""
-        result = coder.get_city_info("Belo Horizonte", "MG")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("Belo Horizonte", "MG", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3106200
 
-    def test_curitiba(self, coder):
+    def test_curitiba(self, geocoder):
         """Testa busca por Curitiba."""
-        result = coder.get_city_info("Curitiba", "PR")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("Curitiba", "PR", db=geocoder.db)
         assert result is not None
         assert result.city_code == 4106902
 
-    def test_sao_jose_dos_campos(self, coder):
+    def test_sao_jose_dos_campos(self, geocoder):
         """Testa busca por São José dos Campos."""
-        result = coder.get_city_info("São José dos Campos", "SP")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("São José dos Campos", "SP", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3549904
 
-    def test_nome_com_acento(self, coder):
+    def test_nome_com_acento(self, geocoder):
         """Testa que acentos são normalizados corretamente."""
-        result = coder.get_city_info("Sao Paulo", "SP")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("Sao Paulo", "SP", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3550308
 
-    def test_estado_minusculo(self, coder):
+    def test_estado_minusculo(self, geocoder):
         """Testa que estado em minúsculo funciona."""
-        result = coder.get_city_info("São Paulo", "sp")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("São Paulo", "sp", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3550308
 
-    def test_estado_maiusculo(self, coder):
+    def test_estado_maiusculo(self, geocoder):
         """Testa que estado em maiúsculo funciona."""
-        result = coder.get_city_info("São Paulo", "SP")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("São Paulo", "SP", db=geocoder.db)
         assert result is not None
         assert result.city_code == 3550308
 
-    def test_municipio_nao_encontrado(self, coder):
+    def test_municipio_nao_encontrado(self, geocoder):
         """Testa retorno para município inexistente."""
-        result = coder.get_city_info("Cidade Inexistente XYZ", "XX")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("Cidade Inexistente XYZ", "XX", db=geocoder.db)
         assert result is None
 
-    def test_municipio_vazio(self, coder):
+    def test_municipio_vazio(self, geocoder):
         """Testa retorno para município vazio."""
-        result = coder.get_city_info("", "SP")
+        from openaddrbr.services._city import get_city_info
+        result = get_city_info("", "SP", db=geocoder.db)
         assert result is None
