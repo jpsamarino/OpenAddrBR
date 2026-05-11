@@ -1,20 +1,27 @@
-"""City service - get_city_info implementation."""
-
-from functools import lru_cache
+"""City info service - get_city_info implementation."""
 
 from openaddrbr.core.models import CityInfo
-from openaddrbr.data import get_city_info_from_db
 
 
-@lru_cache(maxsize=7000)
-def get_city_info(city_name: str, state_code: str) -> CityInfo | None:
-    """Get IBGE city info from city name and state code."""
-    row = get_city_info_from_db(city_name, state_code)
-    if not row:
+def get_city_info(city: str, state: str, db=None) -> CityInfo | None:
+    """Get city info by name and state.
+
+    Args:
+        city: City name
+        state: State code (e.g., "SP")
+        db: Database instance (optional for backward compat)
+    """
+    if db is None:
+        # Fallback for backward compat during transition
+        from openaddrbr.core._database import Database
+
+        db = Database()
+
+    record = db.get_city_info_from_db(city, state)
+    if not record:
         return None
-
     return CityInfo(
-        city_code=row.city_code,
-        city_name=row.city_name,
-        state_code=row.state_code,
+        city_code=record.city_code,
+        city_name=record.city_name,
+        state_code=record.state_code,
     )
