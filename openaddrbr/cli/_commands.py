@@ -10,8 +10,8 @@ from pathlib import Path
 
 import torch
 
+from openaddrbr.core._encoder import VALID_BACKENDS, Encoder
 from openaddrbr.data import check_data_exists, download_data, get_data_path
-from openaddrbr.core._encoder import Encoder, VALID_BACKENDS
 
 
 def _get_sample_addresses() -> list[str]:

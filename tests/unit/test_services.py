@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from openaddrbr.core._database import CityRecord
 from openaddrbr.core._geocoder import Geocoder
 from openaddrbr.core.models import AddressRequest, CityInfo
-from openaddrbr.core._database import CityRecord
 
 
 class TestCityService:
@@ -104,9 +104,13 @@ class TestGeocodeService:
         ]
         mock_db.query_full_address_by_street_id.return_value = [
             MagicMock(
-                street_name="Rua X", street_normalized="rua x",
-                neighborhood_name="Centro", neighborhood_normalized="centro",
-                zip_code="01310000", id=1, source_type="A"
+                street_name="Rua X",
+                street_normalized="rua x",
+                neighborhood_name="Centro",
+                neighborhood_normalized="centro",
+                zip_code="01310000",
+                id=1,
+                source_type="A",
             )
         ]
         mock_db.query_geo_locations.return_value = [
@@ -142,7 +146,9 @@ class TestBatchService:
 
         addresses = [
             AddressRequest(city="São Paulo", state="SP", street="Rua X", neighborhood="Centro"),
-            AddressRequest(city="Rio de Janeiro", state="RJ", street="Rua Y", neighborhood="Centro"),
+            AddressRequest(
+                city="Rio de Janeiro", state="RJ", street="Rua Y", neighborhood="Centro"
+            ),
         ]
 
         result = geocoder.geocode_batch(addresses)

@@ -3,8 +3,9 @@
 from pathlib import Path
 from typing import Optional
 
-from openaddrbr.core._encoder import Encoder
 from openaddrbr.core._database import Database
+from openaddrbr.core._encoder import Encoder
+from openaddrbr.core._env import get_default_batch_size
 from openaddrbr.core.models import (
     AddressRequest,
     CityInfo,
@@ -12,7 +13,6 @@ from openaddrbr.core.models import (
     GeoLocationResult,
     StreetCluster,
 )
-from openaddrbr.core._env import get_default_batch_size
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info
 from openaddrbr.utils import normalize_text, text_similarity
@@ -87,12 +87,22 @@ class Geocoder:
             embedding = self.encoder.encode(street_norm)
             if embedding is not None:
                 from openaddrbr.services._vector_search import search_by_embedding
+
                 street_cluster = search_by_embedding(
                     city_info.city_code, embedding, street_norm, neighborhood_norm, db=self.db
                 )
 
         if street_cluster:
-            return _build_result(street_cluster, street, street_norm, neighborhood_norm, clean_zip, number, city_info, self.db)
+            return _build_result(
+                street_cluster,
+                street,
+                street_norm,
+                neighborhood_norm,
+                clean_zip,
+                number,
+                city_info,
+                self.db,
+            )
 
         return None
 
@@ -121,18 +131,23 @@ class Geocoder:
             city_info = get_city_info(addr.city, addr.state, db=self.db)
             if not city_info:
                 continue
-            normalized.append(_NormalizedAddr(
-                order=i,
-                address=addr,
-                city_info=city_info,
-                street_norm=normalize_text(addr.street) if addr.street else "",
-                neighborhood_norm=normalize_text(addr.neighborhood) if addr.neighborhood else "",
-                zip_code=(
-                    "".join(c for c in str(addr.zip_code) if c.isdigit()).zfill(8)
-                    if addr.zip_code else None
-                ),
-                number=addr.street_number,
-            ))
+            normalized.append(
+                _NormalizedAddr(
+                    order=i,
+                    address=addr,
+                    city_info=city_info,
+                    street_norm=normalize_text(addr.street) if addr.street else "",
+                    neighborhood_norm=normalize_text(addr.neighborhood)
+                    if addr.neighborhood
+                    else "",
+                    zip_code=(
+                        "".join(c for c in str(addr.zip_code) if c.isdigit()).zfill(8)
+                        if addr.zip_code
+                        else None
+                    ),
+                    number=addr.street_number,
+                )
+            )
 
         # Sort by city+street for batching
         valid = sorted(
@@ -150,10 +165,13 @@ class Geocoder:
                 cluster = None
 
                 if addr.zip_code and not is_multi_street_cep(addr.zip_code, db=self.db):
-                    cluster = search_by_cep(addr.zip_code, addr.street_norm, addr.neighborhood_norm, db=self.db)
+                    cluster = search_by_cep(
+                        addr.zip_code, addr.street_norm, addr.neighborhood_norm, db=self.db
+                    )
 
                 if not cluster and embedding is not None:
                     from openaddrbr.services._vector_search import search_by_embedding
+
                     cluster = search_by_embedding(
                         addr.city_info.city_code,
                         embedding,
@@ -178,7 +196,16 @@ class Geocoder:
 
 
 class _NormalizedAddr:
-    __slots__ = ("order", "address", "city_info", "street_norm", "neighborhood_norm", "zip_code", "number")
+    __slots__ = (
+        "order",
+        "address",
+        "city_info",
+        "street_norm",
+        "neighborhood_norm",
+        "zip_code",
+        "number",
+    )
+
     def __init__(self, order, address, city_info, street_norm, neighborhood_norm, zip_code, number):
         self.order = order
         self.address = address
@@ -189,7 +216,9 @@ class _NormalizedAddr:
         self.number = number
 
 
-def _find_best_geo_location(db: Database, street_id: int, number: int, limit_numbers: int = 3) -> GeoLocation | None:
+def _find_best_geo_location(
+    db: Database, street_id: int, number: int, limit_numbers: int = 3
+) -> GeoLocation | None:
     """Find best geo location for street_id and number with parity matching."""
     rows = db.query_geo_locations(street_id, number, limit_numbers)
     if not rows:

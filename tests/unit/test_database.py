@@ -1,9 +1,10 @@
 """Tests for Database class."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from openaddrbr.core._database import Database, CityRecord
+import pytest
+
+from openaddrbr.core._database import CityRecord, Database
 
 
 class TestDatabase:

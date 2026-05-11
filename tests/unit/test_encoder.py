@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from openaddrbr.core._encoder import Encoder, VALID_BACKENDS
+from openaddrbr.core._encoder import VALID_BACKENDS, Encoder
 
 
 class TestEncoder:

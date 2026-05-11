@@ -3,7 +3,6 @@
 from openaddrbr import geocode as _geocode
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import (
-    get_connection,
     query_street_query,
 )
 from openaddrbr.data import (
@@ -24,13 +23,6 @@ class IBGEGeocoder:
     def __init__(self, verbose=True, preload_model=True):
         self._verbose = verbose
         self._preload_model = preload_model
-        self._sgeodb_conn = None
-
-    def _get_sgeodb(self):
-        """Compatibility - return connection from data layer."""
-        if self._sgeodb_conn is None:
-            self._sgeodb_conn = get_connection()
-        return self._sgeodb_conn
 
     def get_city_info(self, city_name, state_code):
         return _get_city_info(city_name, state_code)
@@ -56,11 +48,6 @@ class IBGEGeocoder:
         from openaddrbr import get_geo_info_batch as _batch
 
         return _batch(addresses, batch_size)
-
-    def close(self):
-        """Close database connection."""
-        if self._sgeodb_conn:
-            self._sgeodb_conn = None
 
 
 __all__ = ["IBGEGeocoder"]
