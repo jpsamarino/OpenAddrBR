@@ -15,7 +15,7 @@ from openaddrbr.data import (
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info as _get_city_info
 from openaddrbr.services._encoder import _encode_street
-from openaddrbr.services._vector_search import _search_by_embedding
+from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text, text_similarity
 
 
@@ -172,7 +172,7 @@ def geocode(
 
     if not street_cluster:
         embedding = _encode_street(street_norm)
-        street_cluster = _search_by_embedding(
+        street_cluster = search_by_embedding(
             city_info.city_code, embedding, street_norm, neighborhood_norm
         )
 
