@@ -11,11 +11,7 @@ from pathlib import Path
 import torch
 
 from openaddrbr.data import check_data_exists, download_data, get_data_path
-from openaddrbr.services._encoder import (
-    VALID_BACKENDS,
-    _encode_streets_batch,
-    configure_encoder,
-)
+from openaddrbr.core._encoder import Encoder, VALID_BACKENDS
 
 
 def _get_sample_addresses() -> list[str]:
@@ -49,12 +45,10 @@ def _run_benchmark_for_backend(
     # Ensure at least 200 addresses for reliable benchmark
     addresses = (addresses * max(1, (200 // len(addresses)) + 1))[:200]
     try:
-        configure_encoder(backend)
+        encoder = Encoder(backend=backend)
         for batch_size in batch_sizes:
             start = time.perf_counter()
-            for i in range(0, len(addresses), batch_size):
-                batch = addresses[i : i + batch_size]
-                _encode_streets_batch(batch, batch_size=batch_size)
+            encoder.encode_batch(addresses, batch_size=batch_size)
             elapsed = time.perf_counter() - start
             streets_per_sec = len(addresses) / elapsed
             results.append(
@@ -260,9 +254,7 @@ def _main(args=None):
                 print(f"         but is quantized - using pytorch-compiled for accuracy")
                 print()
 
-        # Apply to current process
-        configure_encoder(recommended)
-        print(f"  [OK] Applied: OPENADDRBR_BACKEND={recommended}")
+        print(f"  [OK] Detected best backend: OPENADDRBR_BACKEND={recommended}")
 
         # Update .env file (preserves existing content)
         env_path = Path.cwd() / ".env"
