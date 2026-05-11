@@ -12,8 +12,8 @@ from pathlib import Path
 
 import psutil
 
-from openaddrbr.data._config import get_usearch_dir
-from openaddrbr.data._db import get_city_info_from_db
+from openaddrbr.core._env import get_usearch_dir
+from openaddrbr.core._database import Database
 from openaddrbr.data._usearch import get_semantic_index
 
 
@@ -23,10 +23,11 @@ def get_city_codes(limit=None):
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    db = Database()
     codes = set()
     for d in data:
         place = d.get("place", {})
-        ci = get_city_info_from_db(place.get("city", ""), place.get("state", ""))
+        ci = db.get_city_info_from_db(place.get("city", ""), place.get("state", ""))
         if ci:
             codes.add(ci.city_code)
         if limit and len(codes) >= limit:
