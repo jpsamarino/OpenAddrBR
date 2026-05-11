@@ -12,8 +12,8 @@ from pathlib import Path
 
 import psutil
 
-from openaddrbr.core._env import get_usearch_dir
 from openaddrbr.core._database import Database
+from openaddrbr.core._env import get_usearch_dir
 from openaddrbr.data._usearch import get_semantic_index
 
 

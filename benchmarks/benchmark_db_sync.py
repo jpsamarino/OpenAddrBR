@@ -24,8 +24,6 @@ from benchmarks._db_ref_base import (
 )
 
 # APSW module-level
-
-
 from openaddrbr.core._database import Database
 
 # Create a Database instance for APSW side
