@@ -30,10 +30,11 @@ class Encoder:
     Thread-safe: model is loaded once and shared across threads.
     """
 
-    def __init__(self, backend: str | None = None):
+    def __init__(self, backend: str | None = None, batch_size: int | None = None):
         self.backend = backend or get_default_backend()
         if self.backend not in VALID_BACKENDS:
             raise ValueError(f"Unknown backend: {backend}. Valid: {VALID_BACKENDS}")
+        self._batch_size = batch_size if batch_size is not None else get_default_batch_size()
         self._model: Optional[SentenceTransformer] = None
 
     def _get_model(self) -> SentenceTransformer:
@@ -153,5 +154,5 @@ class Encoder:
         if not texts:
             return []
         if batch_size is None:
-            batch_size = get_default_batch_size()
+            batch_size = self._batch_size
         return self._get_model().encode(texts, batch_size=batch_size, show_progress_bar=False)

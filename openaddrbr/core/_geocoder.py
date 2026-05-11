@@ -41,9 +41,9 @@ class Geocoder:
         encoder: Encoder | None = None,
         db: Database | None = None,
     ):
-        self.encoder = encoder if encoder is not None else Encoder(backend=backend)
+        self.encoder = encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         self.db = db if db is not None else Database(data_path=data_path)
-        self.batch_size = batch_size or get_default_batch_size()
+        self.batch_size = batch_size if batch_size is not None else get_default_batch_size()
 
     def geocode(
         self,
