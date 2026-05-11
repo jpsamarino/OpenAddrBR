@@ -10,7 +10,7 @@ try:
 except ImportError:
     usearch_Index = None
 
-from openaddrbr.data._config import get_usearch_dir
+from openaddrbr.core._env import get_usearch_dir
 
 
 @lru_cache(maxsize=128)

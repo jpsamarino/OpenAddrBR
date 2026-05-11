@@ -8,9 +8,9 @@ import zstandard as zstd
 from huggingface_hub import hf_hub_download
 from sentence_transformers import SentenceTransformer
 
-from openaddrbr.data._config import (
+from openaddrbr.core._env import (
     ensure_data_path,
-    get_data_path,
+    get_default_data_path,
     get_model_path,
     get_sgeodb_path,
     get_usearch_dir,
@@ -72,7 +72,7 @@ def _extract(tar_path: Path, dest_dir: Path) -> None:
 
 def download_data(force: bool = False) -> Path:
     """Download and extract data from Hugging Face Hub."""
-    data_path = get_data_path()
+    data_path = get_default_data_path()
     _print(f"[OpenAddrBR] Data path: {data_path}")
 
     missing_local = _get_missing_items()
