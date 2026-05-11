@@ -11,7 +11,7 @@ def get_connection() -> sqlite3.Connection:
     """Get a lazy SQLite connection to sgeobr.db."""
     global _conn
     if _conn is None:
-        from openaddrbr.data._config import get_sgeodb_path
+        from openaddrbr.core._env import get_sgeodb_path
 
         db_path = get_sgeodb_path()
         if not db_path.exists():

@@ -24,33 +24,26 @@ from benchmarks._db_ref_base import (
 )
 
 # APSW module-level
-from openaddrbr.data import (
-    close_connection as apsw_close_connection,
-)
-from openaddrbr.data import (
-    get_city_info_from_db as apsw_get_city_info,
-)
-from openaddrbr.data import (
-    is_multi_street_cep as apsw_is_multi_street_cep,
-)
-from openaddrbr.data import (
-    query_address_by_cep as apsw_query_address_by_cep,
-)
-from openaddrbr.data import (
-    query_address_by_street_names as apsw_query_address_by_street_names,
-)
-from openaddrbr.data import (
-    query_full_address_by_street_id as apsw_query_full_address_by_street_id,
-)
-from openaddrbr.data import (
-    query_geo_locations as apsw_query_geo_locations,
-)
-from openaddrbr.data import (
-    query_query_ids as apsw_query_query_ids,
-)
-from openaddrbr.data import (
-    query_street_query as apsw_query_street_query,
-)
+
+
+from openaddrbr.core._database import Database
+
+# Create a Database instance for APSW side
+_apsw_db = Database()
+
+# APSW impl using Database instance
+apsw_impl = {
+    "init": lambda: None,
+    "close": lambda: None,
+    "get_city_info": lambda city, state: _apsw_db.get_city_info_from_db(city, state),
+    "is_multi_street_cep": _apsw_db.is_multi_street_cep,
+    "query_address_by_cep": _apsw_db.query_address_by_cep,
+    "query_full_address_by_street_id": _apsw_db.query_full_address_by_street_id,
+    "query_geo_locations": _apsw_db.query_geo_locations,
+    "query_street_query": _apsw_db.query_street_query,
+    "query_address_by_street_names": _apsw_db.query_address_by_street_names,
+    "query_query_ids": _apsw_db.query_query_ids,
+}
 
 
 @dataclass
@@ -212,19 +205,6 @@ def main():
     }
 
     # _db.py (APSW module-level singleton)
-    apsw_impl = {
-        "init": lambda: None,
-        "close": apsw_close_connection,
-        "get_city_info": apsw_get_city_info,
-        "is_multi_street_cep": apsw_is_multi_street_cep,
-        "query_address_by_cep": apsw_query_address_by_cep,
-        "query_full_address_by_street_id": apsw_query_full_address_by_street_id,
-        "query_geo_locations": apsw_query_geo_locations,
-        "query_street_query": apsw_query_street_query,
-        "query_address_by_street_names": apsw_query_address_by_street_names,
-        "query_query_ids": apsw_query_query_ids,
-    }
-
     print("\n[1/2] _db_ref_base.py (SQLite3)...")
     results_sqlite = run_benchmarks("_db_ref_base.py (SQLite3)", sqlite_impl, data_dir)
 
