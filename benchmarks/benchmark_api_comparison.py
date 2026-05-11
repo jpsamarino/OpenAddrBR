@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import NamedTuple
 
-from application import IBGEGeocoder
+from openaddrbr import Geocoder
 from openaddrbr.core.models import AddressRequest
 
 # --- Config ---
@@ -81,7 +81,7 @@ def run_geocoding(addresses: list[tuple[int, AddressRequest]], coder):
         batch_addr = [a for _, a in batch_tuple]
         batch_idx = [idx for idx, _ in batch_tuple]
         chunk_start = time.perf_counter()
-        ibge_results = coder.get_geo_info_batch(batch_addr, batch_size=INTERNAL_BATCH_SIZE)
+        ibge_results = coder.geocode_batch(batch_addr, batch_size=INTERNAL_BATCH_SIZE)
         chunk_elapsed = time.perf_counter() - chunk_start
         for idx, ibge_res in zip(batch_idx, ibge_results):
             results[idx] = {"ibge": ibge_res}
@@ -233,9 +233,8 @@ def main():
 
     addresses = build_addresses(records)
 
-    coder = IBGEGeocoder(verbose=False)
+    coder = Geocoder()
     results, elapsed = run_geocoding(addresses, coder)
-    coder.close()
 
     stats = compute_statistics(records, results, elapsed)
     print_report(stats)

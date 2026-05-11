@@ -1,5 +1,5 @@
 """
-Encoder benchmark - measure throughput for _encode_street and _encode_streets_batch.
+Encoder benchmark - measure throughput for Encoder.encode and Encoder.encode_batch.
 """
 
 import argparse
@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from openaddrbr.services._encoder import _encode_street, _encode_streets_batch
+from openaddrbr.core._encoder import Encoder
 from openaddrbr.utils import normalize_text
 
 
@@ -62,7 +62,7 @@ def benchmark_single(name: str, fn, data: list[str], warmup_runs: int = 3) -> Be
 
 
 def benchmark_batch(
-    name: str, data: list[str], batch_size: int, warmup_runs: int = 3
+    name: str, encoder: Encoder, data: list[str], batch_size: int, warmup_runs: int = 3
 ) -> BenchmarkResult:
     count = len(data)
 
@@ -70,12 +70,12 @@ def benchmark_batch(
     for _ in range(warmup_runs):
         warmup_data = data[: min(100, count)]
         for i in range(0, len(warmup_data), batch_size):
-            _encode_streets_batch(warmup_data[i : i + batch_size], batch_size)
+            encoder.encode_batch(warmup_data[i : i + batch_size], batch_size)
 
     # Benchmark
     t0 = time.perf_counter()
     for i in range(0, count, batch_size):
-        _encode_streets_batch(data[i : i + batch_size], batch_size)
+        encoder.encode_batch(data[i : i + batch_size], batch_size)
     elapsed_ns = (time.perf_counter() - t0) * 1_000_000_000
 
     ns_per_batch = elapsed_ns / ((count + batch_size - 1) // batch_size) if count > 0 else 0
@@ -107,6 +107,7 @@ def main():
         print("No data loaded. Exiting.")
         return
 
+    encoder = Encoder()
     batch_sizes = [2, 4, 8, 16, 32, 64]
 
     print()
@@ -118,20 +119,20 @@ def main():
     print(f"Batch sizes: {batch_sizes}")
     print()
 
-    # encode_street (single)
-    print("encode_street (single):")
+    # encode (single)
+    print("encode (single):")
     print(f"  {'name':<40} | {'ns/call':>12} | {'calls/sec':>12} | {'count':>8}")
     print("-" * 78)
 
-    r_single = benchmark_single("_encode_street", _encode_street, street_norms)
+    r_single = benchmark_single("encode", encoder.encode, street_norms)
     print(
         f"  {r_single.name:<40} | {r_single.ns_per_call:>12.0f} | {r_single.items_per_sec:>12.0f} | {r_single.count:>8,}"
     )
 
     print()
 
-    # encode_streets_batch (batch sizes)
-    print("encode_streets_batch (batch sizes):")
+    # encode_batch (batch sizes)
+    print("encode_batch (batch sizes):")
     print(f"  {'name':<40} | {'batch':>6} | {'ns/batch':>12} | {'streets/sec':>12} | {'count':>8}")
     print("-" * 90)
 
@@ -142,11 +143,11 @@ def main():
     for batch_size in batch_sizes:
         # Skip if batch_size > data length
         if batch_size > len(street_norms):
-            print(f"  _encode_streets_batch (bs={batch_size:<3}) | skipped (data too small)")
+            print(f"  encode_batch (bs={batch_size:<3}) | skipped (data too small)")
             continue
 
-        name = f"_encode_streets_batch (bs={batch_size})"
-        r = benchmark_batch(name, street_norms, batch_size)
+        name = f"encode_batch (bs={batch_size})"
+        r = benchmark_batch(name, encoder, street_norms, batch_size)
         results.append(r)
         print(
             f"  {r.name:<40} | {batch_size:>6} | {r.ns_per_call:>12.0f} | {r.items_per_sec:>12.0f} | {r.count:>8,}"
