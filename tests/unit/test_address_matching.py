@@ -5,8 +5,7 @@ Tests for address_matching utilities - Complex realistic scenarios.
 import pytest
 
 from domain.models import StreetCluster
-from utils.address_matching import find_best_street_match
-from utils.similarity import text_similarity
+from openaddrbr.utils._matching import find_best_street_match, text_similarity
 
 
 def make_cluster(street_id: int, streets: list, neighborhoods: list) -> StreetCluster:

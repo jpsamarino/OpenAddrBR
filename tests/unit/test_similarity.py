@@ -4,8 +4,8 @@ Tests for similarity utilities.
 
 import pytest
 
-from utils.similarity import make_similarity_func, text_similarity
-from utils.text_to_ascii import text_to_ascii
+from openaddrbr.utils._matching import make_similarity_func, text_similarity
+from openaddrbr.utils._text import text_to_ascii
 
 
 class TestTextSimilarity:
