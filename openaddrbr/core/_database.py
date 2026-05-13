@@ -146,6 +146,7 @@ class Database(GeocoderDB):
         return [GeoInfoRecord(*r) for r in cursor.fetchall()]
 
     def query_street_query(self, query_ids: list[int], city_code: int) -> list[str]:
+        # review --> query_id is pk and unique , need city_code ?
         if not query_ids:
             return []
         cursor = self._get_cursor()
@@ -156,11 +157,3 @@ class Database(GeocoderDB):
             (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64), str(city_code)),
         )
         return [r[0] for r in cursor.fetchall()]
-
-    def query_query_ids(self, city_code: int) -> list[int]:
-        cursor = self._get_cursor()
-        cursor.execute(
-            "SELECT DISTINCT query_id FROM street_query WHERE city_code = ? LIMIT 200",
-            (str(city_code),),
-        )
-        return [row[0] for row in cursor.fetchall()]

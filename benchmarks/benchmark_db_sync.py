@@ -19,7 +19,6 @@ from benchmarks._db_ref_base import (
     query_address_by_street_names,
     query_full_address_by_street_id,
     query_geo_locations,
-    query_query_ids,
     query_street_query,
 )
 
@@ -40,7 +39,6 @@ apsw_impl = {
     "query_geo_locations": _apsw_db.query_geo_locations,
     "query_street_query": _apsw_db.query_street_query,
     "query_address_by_street_names": _apsw_db.query_address_by_street_names,
-    "query_query_ids": _apsw_db.query_query_ids,
 }
 
 
@@ -99,7 +97,6 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
         "fetch_geo_location": load_json(data_dir / "fetch_geo_location.json"),
         "fetch_street_by_query_ids": load_json(data_dir / "fetch_street_by_query_ids.json"),
         "fetch_address_by_street_names": load_json(data_dir / "fetch_address_by_street_names.json"),
-        "fetch_query_ids": load_json(data_dir / "fetch_query_ids.json"),
     }
 
     for db_name, data in datasets.items():
@@ -170,12 +167,6 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
     results.append(r)
     print_result(r)
 
-    r = benchmark_fn_sync(
-        "fetch_query_ids", lambda p: impl["query_query_ids"](p), datasets["fetch_query_ids"]
-    )
-    results.append(r)
-    print_result(r)
-
     impl["close"]()
 
     return {r.name: r for r in results}
@@ -199,7 +190,6 @@ def main():
         "query_geo_locations": query_geo_locations,
         "query_street_query": query_street_query,
         "query_address_by_street_names": query_address_by_street_names,
-        "query_query_ids": query_query_ids,
     }
 
     # _db.py (APSW module-level singleton)

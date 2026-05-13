@@ -130,10 +130,3 @@ def query_street_query(query_ids: list[int], city_code: int):
         WHERE query_id IN ({placeholders}) AND city_code = ?
     """
     return conn.execute(query, query_ids + [str(city_code)]).fetchall()
-
-
-def query_query_ids(city_code: int) -> list[int]:
-    """Query all query_ids for a city."""
-    conn = get_connection()
-    query = "SELECT DISTINCT query_id FROM street_query WHERE city_code = ? LIMIT 200"
-    return [row[0] for row in conn.execute(query, (str(city_code),)).fetchall()]

@@ -8,30 +8,6 @@ from openaddrbr.data import search_vector as search_vector_index
 from openaddrbr.utils import find_best_street_match
 
 
-def _fetch_clusters_by_street_names(
-    street_names: list[str], city_code: int, db: GeocoderDB
-) -> list[StreetCluster]:
-    """Fetch and build street clusters from normalized street names."""
-    if not street_names:
-        return []
-
-    rows = db.query_address_by_street_names(street_names, city_code)
-    if not rows:
-        return []
-
-    clusters: list[StreetCluster] = []
-    last_street_id = None
-    for row in rows:
-        sid = row.street_id
-        if sid != last_street_id:
-            clusters.append(StreetCluster(street_id=sid))
-            last_street_id = sid
-        current = clusters[-1]
-        current.street_normalized.add(row.street_normalized)
-        current.neighborhood_normalized.add(row.neighborhood_normalized)
-    return clusters
-
-
 def search_by_embedding(
     city_code: int,
     embedding: np.ndarray,
