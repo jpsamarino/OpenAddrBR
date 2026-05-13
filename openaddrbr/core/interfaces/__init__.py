@@ -3,8 +3,8 @@
 from openaddrbr.core.interfaces._protocols import (
     BatchGeocoder,
     CityFinder,
-    GeocoderDB,
     GeoCoder,
+    GeocoderDB,
     StreetSearcher,
 )
 

@@ -2,13 +2,14 @@
 
 import numpy as np
 
+from openaddrbr.core.interfaces._protocols import GeocoderDB
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import search_vector as search_vector_index
 from openaddrbr.utils import find_best_street_match
 
 
 def _fetch_clusters_by_street_names(
-    street_names: list[str], city_code: int, db
+    street_names: list[str], city_code: int, db: GeocoderDB
 ) -> list[StreetCluster]:
     """Fetch and build street clusters from normalized street names."""
     if not street_names:
@@ -36,7 +37,7 @@ def search_by_embedding(
     embedding: np.ndarray,
     street_norm: str,
     neighborhood_norm: str,
-    db,
+    db: GeocoderDB,
 ) -> StreetCluster | None:
     """Search by complete address using vector search + exact SQL."""
     if embedding is None or street_norm is None:

@@ -9,8 +9,8 @@ from cachetools import LRUCache
 
 from openaddrbr.core._env import get_default_data_path, get_sgeodb_path
 from openaddrbr.core._records import (
-    CityRecord,
     AddressRecord,
+    CityRecord,
     FullAddressRecord,
     GeoInfoRecord,
 )
