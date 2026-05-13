@@ -3,42 +3,18 @@
 import array
 import threading
 from pathlib import Path
-from typing import NamedTuple
 
 import apsw
 from cachetools import LRUCache
 
 from openaddrbr.core._env import get_default_data_path, get_sgeodb_path
+from openaddrbr.core._records import (
+    CityRecord,
+    AddressRecord,
+    FullAddressRecord,
+    GeoInfoRecord,
+)
 from openaddrbr.utils import normalize_text
-
-
-class CityRecord(NamedTuple):
-    city_code: int
-    city_name: str
-    state_code: str
-
-
-class AddressRecord(NamedTuple):
-    street_id: int
-    street_normalized: str
-    neighborhood_normalized: str
-
-
-class FullAddressRecord(NamedTuple):
-    street_name: str
-    street_normalized: str
-    neighborhood_name: str
-    neighborhood_normalized: str
-    zip_code: str
-    id: int
-    source_type: str
-
-
-class GeoInfoRecord(NamedTuple):
-    latitude: float
-    longitude: float
-    address_number: int
-    address_id: int
 
 
 class Database:

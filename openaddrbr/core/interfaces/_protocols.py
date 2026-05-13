@@ -1,6 +1,6 @@
 """Protocol definitions for structural subtyping."""
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import numpy as np
 
@@ -10,6 +10,27 @@ from openaddrbr.core.models import (
     GeoLocationResult,
     StreetCluster,
 )
+
+if TYPE_CHECKING:
+    from openaddrbr.core._records import (
+        AddressRecord,
+        CityRecord,
+        FullAddressRecord,
+        GeoInfoRecord,
+    )
+
+
+@runtime_checkable
+class GeocoderDB(Protocol):
+    """Protocol for geocoder SQLite database access."""
+
+    def get_city_info_from_db(self, city_name: str, state_code: str) -> "CityRecord | None": ...
+    def is_multi_street_cep(self, cep: str) -> bool: ...
+    def query_address_by_cep(self, zip_code: str, limit: int = 10) -> "list[AddressRecord]": ...
+    def query_address_by_street_names(self, street_names: list[str], city_code: int) -> "list[AddressRecord]": ...
+    def query_street_query(self, query_ids: list[int], city_code: int) -> list[str]: ...
+    def query_full_address_by_street_id(self, street_id: int) -> "list[FullAddressRecord]": ...
+    def query_geo_locations(self, street_id: int, number: int, limit: int = 3) -> "list[GeoInfoRecord]": ...
 
 
 @runtime_checkable
