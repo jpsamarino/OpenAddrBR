@@ -14,10 +14,11 @@ from openaddrbr.core._records import (
     FullAddressRecord,
     GeoInfoRecord,
 )
+from openaddrbr.core.interfaces import GeocoderDB
 from openaddrbr.utils import normalize_text
 
 
-class Database:
+class Database(GeocoderDB):
     """Thread-safe database accessor with connection pooling and bounded caches.
 
     Args:
