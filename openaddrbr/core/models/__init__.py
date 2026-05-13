@@ -1,5 +1,11 @@
 """Core models package."""
 
+from openaddrbr.core.models._db_models import (
+    AddressRecord,
+    CityRecord,
+    FullAddressRecord,
+    GeoInfoRecord,
+)
 from openaddrbr.core.models._models import (
     AddressRequest,
     CityInfo,
@@ -10,6 +16,12 @@ from openaddrbr.core.models._models import (
 )
 
 __all__ = [
+    # DB records
+    "CityRecord",
+    "AddressRecord",
+    "FullAddressRecord",
+    "GeoInfoRecord",
+    # Domain models
     "StreetCluster",
     "CityInfo",
     "GeoLocation",

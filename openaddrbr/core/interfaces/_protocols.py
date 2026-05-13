@@ -12,7 +12,7 @@ from openaddrbr.core.models import (
 )
 
 if TYPE_CHECKING:
-    from openaddrbr.core._records import (
+    from openaddrbr.core.models import (
         AddressRecord,
         CityRecord,
         FullAddressRecord,
