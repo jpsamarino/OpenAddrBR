@@ -41,7 +41,9 @@ class Geocoder:
         encoder: Encoder | None = None,
         db: Database | None = None,
     ):
-        self.encoder = encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
+        self.encoder = (
+            encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
+        )
         self.db = db if db is not None else Database(data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()
 
@@ -125,7 +127,7 @@ class Geocoder:
             batch_size = self.batch_size
 
         # Normalize all addresses
-        normalized = []
+        normalized: list[_NormalizedAddr] = []
         for i, addr in enumerate(addresses):
             city_info = get_city_info(addr.city, addr.state, db=self.db)
             if not city_info:
@@ -158,7 +160,9 @@ class Geocoder:
 
         for i in range(0, len(valid), batch_size):
             batch = valid[i : i + batch_size]
-            embeddings = self.encoder.encode_batch([addr.street_norm for addr in batch], len(batch))
+            embeddings = self.encoder.encode_batch(
+                [addr.street_norm for addr in batch], len(batch)
+            )  # fix batch size isnt batch function size
 
             for addr, embedding in zip(batch, embeddings):
                 cluster = None
@@ -203,7 +207,16 @@ class _NormalizedAddr:
         "number",
     )
 
-    def __init__(self, order, address, city_info, street_norm, neighborhood_norm, zip_code, number):
+    def __init__(
+        self,
+        order: int,
+        address: AddressRequest,
+        city_info: CityInfo,
+        street_norm: str,
+        neighborhood_norm: str,
+        zip_code: str | None,
+        number: int,
+    ):
         self.order = order
         self.address = address
         self.city_info = city_info
