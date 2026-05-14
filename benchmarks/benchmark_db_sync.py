@@ -153,7 +153,7 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
 
     r = benchmark_fn_sync(
         "fetch_street_by_query_ids",
-        lambda p: impl["query_street_query"](p[0], p[1]),
+        lambda p: impl["query_street_query"](p[0]),
         datasets["fetch_street_by_query_ids"],
     )
     results.append(r)

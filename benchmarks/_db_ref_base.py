@@ -118,15 +118,11 @@ def query_geo_locations(street_id: int, number: int, limit: int = 3):
     return conn.execute(query, (street_id, number, limit)).fetchall()
 
 
-def query_street_query(query_ids: list[int], city_code: int):
+def query_street_query(query_ids: list[int]):
     """Query street_query table for vector search results."""
     if not query_ids:
         return []
     conn = get_connection()
     placeholders = ",".join("?" * len(query_ids))
-    query = f"""
-        SELECT DISTINCT street_normalized
-        FROM street_query
-        WHERE query_id IN ({placeholders}) AND city_code = ?
-    """
-    return conn.execute(query, query_ids + [str(city_code)]).fetchall()
+    query = f"SELECT street_normalized FROM street_query WHERE query_id IN ({placeholders})"
+    return conn.execute(query, query_ids).fetchall()

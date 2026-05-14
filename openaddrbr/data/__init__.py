@@ -36,6 +36,6 @@ def _get_db() -> Database:
     return _db
 
 
-def query_street_query(query_ids: list[int], city_code: int) -> list[str]:
+def query_street_query(query_ids: list[int]) -> list[str]:
     """Query street normalized names by query IDs."""
-    return _get_db().query_street_query(query_ids, city_code)
+    return _get_db().query_street_query(query_ids)

@@ -42,7 +42,7 @@ class IBGEGeocoder:
         if not query_ids:
             return []
 
-        return query_street_query(query_ids, city_code)
+        return query_street_query(query_ids)
 
     def get_geo_info_batch(self, addresses, batch_size=16):
         from openaddrbr import get_geo_info_batch as _batch

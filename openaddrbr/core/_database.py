@@ -145,15 +145,13 @@ class Database(GeocoderDB):
         )
         return [GeoInfoRecord(*r) for r in cursor.fetchall()]
 
-    def query_street_query(self, query_ids: list[int], city_code: int) -> list[str]:
-        # review --> query_id is pk and unique , need city_code ?
+    def query_street_query(self, query_ids: list[int]) -> list[str]:
         if not query_ids:
             return []
         cursor = self._get_cursor()
         q_arr = array.array("q", query_ids)
         cursor.execute(
-            "SELECT DISTINCT street_normalized FROM street_query "
-            "WHERE query_id IN carray(?) AND city_code = ?",
-            (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64), str(city_code)),
+            "SELECT street_normalized FROM street_query WHERE query_id IN carray(?)",
+            (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
         )
         return [r[0] for r in cursor.fetchall()]

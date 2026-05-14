@@ -23,7 +23,7 @@ def search_by_embedding(
     if not query_ids:
         return None
 
-    street_names = db.query_street_query(query_ids, city_code)
+    street_names = db.query_street_query(query_ids)
     if not street_names:
         return None
 
