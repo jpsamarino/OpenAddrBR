@@ -31,7 +31,7 @@ def search_by_embedding(
     if not rows:
         return None
 
-    clusters = []
+    clusters: list[StreetCluster] = []
     last_street_id = None
     for row in rows:
         sid = row.street_id
