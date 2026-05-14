@@ -4,7 +4,7 @@ Tests for address_matching utilities - Complex realistic scenarios.
 
 import pytest
 
-from domain.models import StreetCluster
+from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils._matching import find_best_street_match, text_similarity
 
 

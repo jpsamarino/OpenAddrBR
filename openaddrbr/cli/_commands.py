@@ -16,23 +16,11 @@ from openaddrbr.data import check_data_exists, download_data, get_data_path
 
 def _get_sample_addresses() -> list[str]:
     """Load sample addresses for benchmarking."""
-    # Try package data first
     pkg_data = Path(__file__).parent.parent / "data" / "sample_addresses.json"
     if pkg_data.exists():
         with open(pkg_data, encoding="utf-8") as f:
             data = json.load(f)
             return [f"{r['street']} - {r['neighborhood']}" for r in data]
-
-    # Fallback to benchmark data
-    benchmark_data = Path(__file__).parent.parent.parent / "benchmarks" / "google_ref_lat_long.json"
-    if benchmark_data.exists():
-        with open(benchmark_data, encoding="utf-8") as f:
-            records = json.load(f)
-            return [
-                r.get("place", {}).get("street", "")
-                for r in records[:500]
-                if r.get("place", {}).get("street")
-            ]
 
     return []
 
@@ -82,39 +70,39 @@ def _update_env_file(recommended: str, env_path: Path) -> None:
         "OPENADDRBR_BATCH_SIZE": "16",
     }
 
+    existing_keys: set[str] = set()
+    other_lines: list[str] = []
+
     if env_path.exists():
-        # Read existing file
         with open(env_path, encoding="utf-8") as f:
             lines = f.read().splitlines()
 
-        # Separate existing OpenAddrBR lines from others
-        other_lines = []
-        existing_keys = set()
         for line in lines:
             stripped = line.strip()
             if stripped.startswith("OPENADDRBR_"):
                 key = stripped.split("=")[0]
                 existing_keys.add(key)
                 if key in new_vars:
-                    other_lines.append(f"{key}={new_vars[key]}")
+                    other_lines.append(line)
             else:
                 other_lines.append(line)
 
-        # Add new OpenAddrBR vars that didn't exist
         for key, value in new_vars.items():
             if key not in existing_keys:
                 other_lines.append(f"{key}={value}")
 
-        # Write back with header at top
         with open(env_path, "w", encoding="utf-8") as f:
             f.write("\n".join(header_comments) + "\n")
             f.write("\n".join(other_lines) + "\n")
     else:
-        # New file - write with header
         with open(env_path, "w", encoding="utf-8") as f:
             f.write("\n".join(header_comments) + "\n")
             for key, value in new_vars.items():
                 f.write(f"{key}={value}\n")
+
+    existing = existing_keys & new_vars.keys()
+    if existing:
+        print(f"  OpenAddrBR vars already set in {env_path.name}, skipping: {', '.join(existing)}")
 
 
 def _main(args=None):

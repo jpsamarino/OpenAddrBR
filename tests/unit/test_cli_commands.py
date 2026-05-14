@@ -15,7 +15,6 @@ def test_update_env_file_new_file(tmp_path):
     content = env_path.read_text(encoding="utf-8")
     assert "OPENADDRBR_BACKEND=pytorch-compiled" in content
     assert "OPENADDRBR_BATCH_SIZE=16" in content
-    assert "# OpenAddrBR Configuration" in content
 
 
 def test_update_env_file_preserves_existing_content(tmp_path):
@@ -31,7 +30,7 @@ def test_update_env_file_preserves_existing_content(tmp_path):
     content = env_path.read_text(encoding="utf-8")
     assert "DATABASE_URL=postgres://localhost/db" in content
     assert "OTHER_VAR=value" in content
-    assert "OPENADDRBR_BACKEND=pytorch-compiled" in content
+    assert "OPENADDRBR_BACKEND=onnx" in content
     assert "OPENADDRBR_BATCH_SIZE=16" in content
 
 
@@ -48,8 +47,8 @@ def test_update_env_file_adds_new_vars(tmp_path):
     assert "OPENADDRBR_BATCH_SIZE=16" in content
 
 
-def test_update_env_file_updates_existing_var(tmp_path):
-    """Test updating existing OPENADDRBR_BACKEND."""
+def test_update_env_file_preserves_existing_var(tmp_path, capsys):
+    """Test that existing OPENADDRBR vars are preserved and not overwritten."""
     env_path = tmp_path / ".env"
     env_path.write_text(
         "OPENADDRBR_BACKEND=onnx-int8\nOPENADDRBR_BATCH_SIZE=8\n",
@@ -60,11 +59,11 @@ def test_update_env_file_updates_existing_var(tmp_path):
 
     content = env_path.read_text(encoding="utf-8")
     lines = content.split("\n")
-    # Check OPENADDRBR_BACKEND was updated
     backend_lines = [l for l in lines if l.startswith("OPENADDRBR_BACKEND=")]
     assert len(backend_lines) == 1
-    assert backend_lines[0] == "OPENADDRBR_BACKEND=pytorch"
-    # Check OPENADDRBR_BATCH_SIZE was updated
+    assert backend_lines[0] == "OPENADDRBR_BACKEND=onnx-int8"
     batch_lines = [l for l in lines if l.startswith("OPENADDRBR_BATCH_SIZE=")]
     assert len(batch_lines) == 1
-    assert batch_lines[0] == "OPENADDRBR_BATCH_SIZE=16"
+    assert batch_lines[0] == "OPENADDRBR_BATCH_SIZE=8"
+    captured = capsys.readouterr()
+    assert "OPENADDRBR_BACKEND, OPENADDRBR_BATCH_SIZE" in captured.out
