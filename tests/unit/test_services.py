@@ -6,14 +6,14 @@ import pytest
 
 from openaddrbr.core._database import CityRecord
 from openaddrbr.core._geocoder import Geocoder
-from openaddrbr.core.models import AddressRequest, CityInfo
+from openaddrbr.core.models import AddressRequest, CityCore
 
 
 class TestCityService:
     """Tests for get_city_info service with DI."""
 
-    def test_get_city_info_returns_cityinfo(self):
-        """get_city_info should return CityInfo when found."""
+    def test_get_city_info_returns_citycore(self):
+        """get_city_info should return CityCore when found."""
         from openaddrbr.services._city import get_city_info
 
         mock_db = MagicMock()

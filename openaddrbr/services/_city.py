@@ -1,10 +1,10 @@
 """City info service - get_city_info implementation."""
 
 from openaddrbr.core.interfaces._protocols import GeocoderDB
-from openaddrbr.core.models import CityInfo
+from openaddrbr.core.models import CityCore
 
 
-def get_city_info(city: str, state: str, db: GeocoderDB | None = None) -> CityInfo | None:
+def get_city_info(city: str, state: str, db: GeocoderDB | None = None) -> CityCore | None:
     """Get city info by name and state.
 
     Args:
@@ -21,7 +21,7 @@ def get_city_info(city: str, state: str, db: GeocoderDB | None = None) -> CityIn
     record = db.get_city_info_from_db(city, state)
     if not record:
         return None
-    return CityInfo(
+    return CityCore(
         city_code=record.city_code,
         city_name=record.city_name,
         state_code=record.state_code,

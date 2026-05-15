@@ -7,10 +7,10 @@ from openaddrbr.core._database import Database
 from openaddrbr.core._encoder import Encoder
 from openaddrbr.core._env import get_default_batch_size
 from openaddrbr.core.models import (
+    AddressInfo,
     AddressRequest,
-    CityInfo,
+    CityCore,
     GeoLocation,
-    GeoLocationResult,
     StreetCluster,
 )
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
@@ -55,7 +55,7 @@ class Geocoder:
         state: str,
         zip_code: str | None = None,
         number: int = 0,
-    ) -> GeoLocationResult | None:
+    ) -> AddressInfo | None:
         """Geocode an address to lat/long coordinates.
 
         Args:
@@ -67,7 +67,7 @@ class Geocoder:
             number: Optional street number
 
         Returns:
-            GeoLocationResult or None if not found
+            AddressInfo or None if not found
         """
         city_info = get_city_info(city, state, db=self.db)
         if not city_info:
@@ -111,7 +111,7 @@ class Geocoder:
         self,
         addresses: list[AddressRequest],
         batch_size: int | None = None,
-    ) -> list[GeoLocationResult | None]:
+    ) -> list[AddressInfo | None]:
         """Geocode multiple addresses in batch.
 
         Args:
@@ -119,7 +119,7 @@ class Geocoder:
             batch_size: Batch size for encoding. Defaults to self.batch_size.
 
         Returns:
-            List of GeoLocationResult or None (in same order as input)
+            List of AddressInfo or None (in same order as input)
         """
         if not addresses:
             return []
@@ -211,7 +211,7 @@ class _NormalizedAddr:
         self,
         order: int,
         address: AddressRequest,
-        city_info: CityInfo,
+        city_info: CityCore,
         street_norm: str,
         neighborhood_norm: str,
         zip_code: str | None,
@@ -268,10 +268,10 @@ def _build_result(
     neighborhood_norm: str,
     cep: str | None,
     number: int,
-    city_info: CityInfo,
+    city_info: CityCore,
     db: Database,
-) -> GeoLocationResult | None:
-    """Build GeoLocationResult from street_cluster."""
+) -> AddressInfo | None:
+    """Build AddressInfo from street_cluster."""
     street_id = street_cluster.street_id
     rows = db.query_full_address_by_street_id(street_id)
     if not rows:
@@ -329,7 +329,7 @@ def _build_result(
 
     addr_full = f"{best_street[1]}, {number}, {best_neighborhood[1]}, {city_info.city_name} - {city_info.state_code}, {best_zip_code[1]}"
 
-    return GeoLocationResult(
+    return AddressInfo(
         lat=lat,
         long=long,
         street_name=best_street[1],

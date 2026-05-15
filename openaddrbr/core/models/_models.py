@@ -13,12 +13,61 @@ class StreetCluster:
     neighborhood_normalized: set[str] = field(default_factory=set)
 
 
-class CityInfo(NamedTuple):
-    """City information from IBGE."""
+class CityCore(NamedTuple):
+    """City information (internal model, no coordinates)."""
 
     city_code: int
     city_name: str
     state_code: str
+
+
+@dataclass
+class CityInfo:
+    """City information with reference coordinates (search output)."""
+
+    city_code: int
+    city_name: str
+    city_normalized: str
+    state_code: str
+    latitude: float
+    longitude: float
+
+
+@dataclass
+class NeighborhoodInfo:
+    """Neighborhood information with reference coordinates (search output)."""
+
+    neighborhood_name: str
+    neighborhood_normalized: str
+    city_code: int
+    latitude: float
+    longitude: float
+
+
+@dataclass
+class StreetInfo:
+    """Street information (search output)."""
+
+    street_name: str
+    street_normalized: str
+    city_code: int
+    zip_codes: list[str]
+
+
+@dataclass
+class AddressInfo:
+    """Result of a geocoding operation (renamed from GeoLocationResult)."""
+
+    lat: float
+    long: float
+    street_name: str
+    neighborhood: str
+    city: str
+    state: str
+    zip_code: str
+    number: int
+    ref_number_lat_long: int
+    address: str = ""
 
 
 class GeoLocation(NamedTuple):

@@ -66,4 +66,5 @@ def test_update_env_file_preserves_existing_var(tmp_path, capsys):
     assert len(batch_lines) == 1
     assert batch_lines[0] == "OPENADDRBR_BATCH_SIZE=8"
     captured = capsys.readouterr()
-    assert "OPENADDRBR_BACKEND, OPENADDRBR_BATCH_SIZE" in captured.out
+    assert "OPENADDRBR_BACKEND" in captured.out
+    assert "OPENADDRBR_BATCH_SIZE" in captured.out

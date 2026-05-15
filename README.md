@@ -97,6 +97,69 @@ print(result)
 
 > **Note**: The function API uses a global default `Geocoder` instance internally. For production applications, use the `Geocoder` class directly for better testability and resource control.
 
+## Return Objects
+
+### `AddressInfo`
+
+Returned by `geocode()` and `geocode_batch()`. Contains the geocoded address with coordinates:
+
+```python
+@dataclass
+class AddressInfo:
+    lat: float              # Latitude
+    long: float             # Longitude
+    street_name: str        # e.g., "Rua Marcelina"
+    neighborhood: str       # e.g., "Centro"
+    city: str               # e.g., "São Paulo"
+    state: str              # e.g., "SP"
+    zip_code: str           # CEP/brazilian postal code
+    number: int             # Street number searched
+    ref_number_lat_long: int # Reference number used for coordinates
+    address: str            # Full formatted address string
+```
+
+### `CityInfo` (search API)
+
+Returned by `geocoder.search_city()`. Contains city reference coordinates:
+
+```python
+@dataclass
+class CityInfo:
+    city_code: int         # IBGE city code
+    city_name: str         # e.g., "São Paulo"
+    city_normalized: str   # Normalized name for matching
+    state_code: str        # e.g., "SP"
+    latitude: float        # Reference latitude (city center)
+    longitude: float        # Reference longitude (city center)
+```
+
+### `NeighborhoodInfo` (search API)
+
+Returned by `geocoder.search_neighborhood()`. Contains neighborhood reference coordinates:
+
+```python
+@dataclass
+class NeighborhoodInfo:
+    neighborhood_name: str         # e.g., "Centro"
+    neighborhood_normalized: str  # Normalized for matching
+    city_code: int                 # IBGE city code
+    latitude: float               # Reference latitude
+    longitude: float              # Reference longitude
+```
+
+### `StreetInfo` (search API)
+
+Returned by `geocoder.search_street()`. Contains street information:
+
+```python
+@dataclass
+class StreetInfo:
+    street_name: str             # e.g., "Rua das Flores"
+    street_normalized: str      # Normalized for matching
+    city_code: int              # IBGE city code
+    zip_codes: list[str]        # Possible CEPs for this street
+```
+
 ## Environment Variables
 
 Create a `.env` file or set environment variables:

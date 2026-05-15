@@ -1,7 +1,7 @@
 """OpenAddrBR - Brazilian address geocoder using vector search."""
 
 from openaddrbr.core._geocoder import Geocoder
-from openaddrbr.core.models import AddressRequest, GeoLocationResult
+from openaddrbr.core.models import AddressInfo, AddressRequest
 
 __all__ = ["Geocoder", "geocode", "get_geo_info_batch"]
 
@@ -17,7 +17,7 @@ def geocode(
     state: str,
     zip_code: str | None = None,
     number: int = 0,
-) -> GeoLocationResult | None:
+) -> AddressInfo | None:
     """Geocode an address to lat/long coordinates (function-style API)."""
     global _default_geocoder
     if _default_geocoder is None:
@@ -28,7 +28,7 @@ def geocode(
 def get_geo_info_batch(
     addresses: list[AddressRequest],
     batch_size: int = 16,
-) -> list[GeoLocationResult | None]:
+) -> list[AddressInfo | None]:
     """Geocode multiple addresses in batch (function-style API)."""
     global _default_geocoder
     if _default_geocoder is None:

@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import numpy as np
 
 from openaddrbr.core.models import (
+    AddressInfo,
     AddressRequest,
-    CityInfo,
-    GeoLocationResult,
+    CityCore,
     StreetCluster,
 )
 
@@ -41,7 +41,7 @@ class GeocoderDB(Protocol):
 class CityFinder(Protocol):
     """Protocol for finding city info by name and state."""
 
-    def get_city_info(self, city_name: str, state_code: str) -> CityInfo | None: ...
+    def get_city_info(self, city_name: str, state_code: str) -> CityCore | None: ...
 
 
 @runtime_checkable
@@ -72,7 +72,7 @@ class GeoCoder(Protocol):
         state: str,
         zip_code: str | None = None,
         number: int = 0,
-    ) -> GeoLocationResult | None: ...
+    ) -> AddressInfo | None: ...
 
 
 @runtime_checkable
@@ -83,4 +83,4 @@ class BatchGeocoder(Protocol):
         self,
         addresses: list[AddressRequest],
         batch_size: int = 16,
-    ) -> list[GeoLocationResult | None]: ...
+    ) -> list[AddressInfo | None]: ...

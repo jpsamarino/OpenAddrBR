@@ -7,13 +7,20 @@ from openaddrbr.core.models._db_models import (
     GeoInfoRecord,
 )
 from openaddrbr.core.models._models import (
+    AddressInfo,
     AddressRequest,
+    CityCore,
     CityInfo,
     GeoLocation,
     GeoLocationResult,
+    NeighborhoodInfo,
     NormalizedAddress,
     StreetCluster,
+    StreetInfo,
 )
+
+# Backward compatibility alias
+GeoLocationResult = AddressInfo
 
 __all__ = [
     # DB records
@@ -23,9 +30,13 @@ __all__ = [
     "GeoInfoRecord",
     # Domain models
     "StreetCluster",
+    "CityCore",
     "CityInfo",
+    "NeighborhoodInfo",
+    "StreetInfo",
+    "AddressInfo",
     "GeoLocation",
     "NormalizedAddress",
     "AddressRequest",
-    "GeoLocationResult",
+    "GeoLocationResult",  # backward compat alias
 ]
