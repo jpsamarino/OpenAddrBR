@@ -24,6 +24,65 @@ python -m openaddrbr setup
 
 ## Usage
 
+### Geocoder Class (Recommended)
+
+The `Geocoder` class provides dependency injection for testability and thread safety:
+
+```python
+from openaddrbr import Geocoder
+
+geocoder = Geocoder()  # Model loaded into RAM (~1.3GB) immediately
+result = geocoder.geocode(
+    street="Rua Marcelina",
+    neighborhood="Centro",
+    city="Sao Paulo",
+    state="SP",
+)
+print(result)
+```
+
+> **Model loading**: The model is loaded synchronously in `Geocoder().__init__`, reserving memory upfront. If something fails (missing data, incompatible hardware), you'll know immediately.
+
+#### Dependency Injection
+
+You can inject custom `Encoder` and `Database` instances for testing:
+
+```python
+from openaddrbr import Geocoder
+from openaddrbr.core._encoder import Encoder
+from openaddrbr.core._database import Database
+
+# Custom configuration
+geocoder = Geocoder(
+    backend="onnx-int8",      # pytorch, pytorch-compiled, onnx, onnx-int8, cuda
+    data_path="/custom/path", # defaults to package data
+    batch_size=32,           # encoding batch size
+)
+
+# For testing: inject mocks
+geocoder = Geocoder(
+    encoder=MockEncoder(),
+    db=MockDatabase(),
+)
+```
+
+#### Batch Processing
+
+```python
+from openaddrbr import Geocoder, AddressRequest
+
+geocoder = Geocoder()
+addresses = [
+    AddressRequest(street="Rua Marcelina", neighborhood="Centro", city="Sao Paulo", state="SP"),
+    AddressRequest(street="Av. Brasil", neighborhood="Jardim", city="Rio de Janeiro", state="RJ"),
+]
+results = geocoder.geocode_batch(addresses, batch_size=16)
+```
+
+### Function API (Backwards Compatible)
+
+For simple scripts, the function API still works:
+
 ```python
 from openaddrbr import geocode
 
@@ -36,6 +95,8 @@ result = geocode(
 print(result)
 ```
 
+> **Note**: The function API uses a global default `Geocoder` instance internally. For production applications, use the `Geocoder` class directly for better testability and resource control.
+
 ## Environment Variables
 
 Create a `.env` file or set environment variables:
@@ -46,6 +107,9 @@ OPENADDRBR_BACKEND=pytorch-compiled
 
 # Batch size for encoding (default: 16)
 OPENADDRBR_BATCH_SIZE=16
+
+# Data path (default: package data directory)
+OPENADDRBR_DATA_PATH=/path/to/data
 ```
 
 ### Backend Options
