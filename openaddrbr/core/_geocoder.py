@@ -13,6 +13,7 @@ from openaddrbr.core.models import (
     GeoLocation,
     StreetCluster,
 )
+from openaddrbr.core.models._models import GeoLocationResult
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info
 from openaddrbr.services._vector_search import search_by_embedding

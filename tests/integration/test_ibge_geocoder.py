@@ -785,9 +785,22 @@ class TestIBGEGeocoderIntegration:
         )
         assert result is None
 
-    # =====================================================================
-    # Known incorrect fuzzy match cases — documented behavior
-    # =====================================================================
+    def test_rua_barao_azevedo_machado_286_pelotas(self, coder):
+        """RUA BARAO DE AZEVEDO MACHAO, 286 - CENTRO, PELOTAS/RS."""
+        result = coder.geocode(
+            street="RUA BARAO DE AZEVEDO MACHAO",
+            neighborhood="Centro",
+            city="Pelotas",
+            state="RS",
+            zip_code=None,
+            number=286,
+        )
+        assert result is not None
+        assert result.street_name == "Rua Barão de Azevedo Machado"
+        assert result.city == "Pelotas"
+        assert result.state == "RS"
+        assert result.neighborhood == "Centro"
+        assert result.number == 286
 
     def test_rua_canima_alto_mooca_sp(self, coder):
         """CANIMA → CANOMÃ in wrong neighborhood (Jardim Romano vs Alto da Mooca)."""
