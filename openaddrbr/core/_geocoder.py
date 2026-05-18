@@ -147,7 +147,7 @@ class Geocoder:
                         if addr.zip_code
                         else None
                     ),
-                    number=addr.street_number,
+                    number=addr.street_number or 0,
                 )
             )
 
@@ -328,7 +328,8 @@ def _build_result(
                 if best_zip_code[1] == "" or z[2] == "A":
                     best_zip_code = (1.0, z[0])
 
-    addr_full = f"{best_street[1]}, {number}, {best_neighborhood[1]}, {city_info.city_name} - {city_info.state_code}, {best_zip_code[1]}"
+    number_display = "s/n" if number == 0 else f"{number}"
+    addr_full = f"{best_street[1]}, {number_display}, {best_neighborhood[1]}, {city_info.city_name} - {city_info.state_code}, {best_zip_code[1]}"
 
     return AddressInfo(
         lat=lat,
