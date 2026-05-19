@@ -13,14 +13,16 @@ from openaddrbr.core._env import (
     get_default_data_path,
     get_model_path,
     get_sgeodb_path,
+    get_tantivy_dir,
     get_usearch_dir,
 )
 
 REPO_ID = "jpsamarino/OpenAddrBR"
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"
 
-COMPRESSED_SGEEBR_DB = "sgeobr.db"  # stored as direct file, not compressed
+SGEEBR_DB = "sgeobr.db"
 COMPRESSED_USEARCH = "usearch_v2.tar.zst"
+COMPRESSED_TANTIVY = "tantivy.tar.zst"
 
 
 def _print(msg: str) -> None:
@@ -35,6 +37,8 @@ def _get_missing_items() -> list[str]:
         missing.append("sgeobr.db")
     if not get_usearch_dir().exists():
         missing.append("usearch_v2/")
+    if not get_tantivy_dir().exists():
+        missing.append("tantivy/")
     if not get_model_path().exists():
         missing.append("model_paraphrase_xlmr/")
     return missing
@@ -86,8 +90,9 @@ def download_data(force: bool = False) -> Path:
     ensure_data_path()
 
     for local_name, remote_name in [
-        ("sgeobr.db", COMPRESSED_SGEEBR_DB),
+        ("sgeobr.db", SGEEBR_DB),
         ("usearch_v2/", COMPRESSED_USEARCH),
+        ("tantivy/", COMPRESSED_TANTIVY),
     ]:
         if local_name in missing_local:
             _print(f"[OpenAddrBR] Downloading {remote_name}...")

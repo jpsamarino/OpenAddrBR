@@ -68,6 +68,13 @@ def get_model_path(data_path: Path | None = None) -> Path:
     return data_path / "model_paraphrase_xlmr"
 
 
+def get_tantivy_dir(data_path: Path | None = None) -> Path:
+    """Get path to tantivy index directory."""
+    if data_path is None:
+        data_path = get_default_data_path()
+    return data_path / "tantivy"
+
+
 def ensure_data_path(data_path: Path | None = None) -> None:
     """Ensure the data directory exists."""
     if data_path is None:
