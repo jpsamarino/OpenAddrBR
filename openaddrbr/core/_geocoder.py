@@ -10,9 +10,11 @@ from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
     CityCore,
+    CityInfo,
     GeoLocation,
     StreetCluster,
 )
+from openaddrbr.services._city_search import search_city_tantivy
 from openaddrbr.core.models._models import GeoLocationResult
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info
@@ -195,6 +197,18 @@ class Geocoder:
                     )
 
         return results
+
+    def search_city(self, query: str, limit: int = 10) -> list[CityInfo]:
+        """Search for cities by name using ngram autocomplete.
+
+        Args:
+            query: City name query (partial match supported)
+            limit: Maximum number of results
+
+        Returns:
+            List of CityInfo objects with coordinates
+        """
+        return search_city_tantivy(query, limit)
 
 
 class _NormalizedAddr:
