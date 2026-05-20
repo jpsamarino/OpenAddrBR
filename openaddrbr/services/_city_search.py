@@ -8,7 +8,6 @@ from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 from openaddrbr.core._env import get_tantivy_dir
 from openaddrbr.core.models import CityInfo
 
-
 # Global ngram analyzer - same as benchmark
 _ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
 

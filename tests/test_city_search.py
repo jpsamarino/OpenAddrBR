@@ -1,6 +1,7 @@
 import pytest
-from openaddrbr.services._city_search import search_city_tantivy
+
 from openaddrbr.core.models import CityInfo
+from openaddrbr.services._city_search import search_city_tantivy
 
 
 def test_search_city_returns_list():
