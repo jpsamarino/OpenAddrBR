@@ -30,6 +30,7 @@ dependencies = [
     "apsw",
     "optimum[onnxruntime]",
     "zstandard",
+    "tantivy",
 ]
 
 [project.optional-dependencies]
