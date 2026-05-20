@@ -1,7 +1,7 @@
 """OpenAddrBR - Brazilian address geocoder using vector search."""
 
 from openaddrbr.core._geocoder import Geocoder
-from openaddrbr.core.models import AddressInfo, AddressRequest
+from openaddrbr.core.models import AddressInfo, AddressRequest, CityInfo
 
 __all__ = ["Geocoder", "geocode", "get_geo_info_batch"]
 
