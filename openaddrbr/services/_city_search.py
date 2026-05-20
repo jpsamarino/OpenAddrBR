@@ -81,11 +81,12 @@ def search_city_tantivy(query: str, limit: int = 10) -> list[CityInfo]:
     cities = []
     for score, doc_address in results.hits:
         doc = searcher.doc(doc_address)
+        city_name = doc.get_first("city_name") or ""
         cities.append(
             CityInfo(
                 city_code=doc.get_first("city_code"),
-                city_name=doc.get_first("city_name"),
-                city_normalized=doc.get_first("city_normalized"),
+                city_name=city_name,
+                city_normalized=text_to_ascii(city_name),
                 state_code=doc.get_first("state_code"),
                 latitude=doc.get_first("ref_latitude"),
                 longitude=doc.get_first("ref_longitude"),

@@ -1,10 +1,8 @@
 """Compatibility shim - wraps function-based API into class."""
 
 from openaddrbr import geocode as _geocode
+from openaddrbr.core._database import Database
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import (
-    query_street_query,
-)
 from openaddrbr.data import (
     search_vector as _search_vector_index,
 )
@@ -15,6 +13,8 @@ from openaddrbr.services._cep import (
     search_by_cep as _search_by_cep,
 )
 from openaddrbr.services._city import get_city_info as _get_city_info
+
+_db = Database()
 
 
 class IBGEGeocoder:
@@ -42,7 +42,7 @@ class IBGEGeocoder:
         if not query_ids:
             return []
 
-        return query_street_query(query_ids)
+        return _db.query_street_query(query_ids)
 
     def get_geo_info_batch(self, addresses, batch_size=16):
         from openaddrbr import get_geo_info_batch as _batch
