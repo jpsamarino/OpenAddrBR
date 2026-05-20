@@ -1,92 +1,14 @@
 """
-Benchmark for city autocomplete using Tantivy.
+Benchmark for city autocomplete using our search_city_tantivy implementation.
 Tests performance and accuracy with various query patterns.
-Uses same BooleanQuery + SHOULD approach as server.py.
 """
 
 import random
 import sqlite3
 import time
-from pathlib import Path
 
-import tantivy
-from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
-
-from openaddrbr.core._env import get_tantivy_dir, get_sgeodb_path
-
-# Global — same as server.py
-_ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
-
-
-def load_index():
-    """Load the index and register tokenizer."""
-    index_path = str(get_tantivy_dir() / "city_index")
-    index = tantivy.Index.open(index_path)
-    index.register_tokenizer("ngram", _ngram_analyzer)
-    return index
-
-
-def text_to_ascii(text):
-    """Normalize text for ASCII, uppercase."""
-    if not text:
-        return ""
-    import unicodedata
-
-    text = unicodedata.normalize("NFD", text.upper())
-    text = "".join(c for c in text if c.isalnum() or c.isspace())
-    text = " ".join(text.split())
-    return text.strip()
-
-
-def build_ngram_query(query_text: str, field_name: str, schema):
-    """
-    BooleanQuery with SHOULD (OR) per token — same logic as server.py.
-    """
-    tokens = _ngram_analyzer.analyze(query_text)
-    if not tokens:
-        return None
-
-    subqueries = [(Occur.Should, tantivy.Query.term_query(schema, field_name, t)) for t in tokens]
-
-    n = len(tokens)
-    if n <= 3:
-        min_match = 1
-    elif n <= 8:
-        min_match = n // 2
-    else:
-        min_match = n // 3 * 2
-
-    return tantivy.Query.boolean_query(subqueries, min_match)
-
-
-def search_cities(index, query, limit=10):
-    """Search for cities using the autocomplete index."""
-    query_normalized = text_to_ascii(query)
-    if not query_normalized:
-        return [], 0
-
-    searcher = index.searcher()
-    schema = index.schema
-
-    tantivy_query = build_ngram_query(query_normalized, "city_search", schema)
-    if tantivy_query is None:
-        return [], 0
-
-    results = searcher.search(tantivy_query, limit=limit)
-
-    cities = []
-    for score, doc_address in results.hits:
-        doc = searcher.doc(doc_address)
-        cities.append(
-            {
-                "city_code": doc.get_first("city_code"),
-                "city_name": doc.get_first("city_name"),
-                "state_code": doc.get_first("state_code"),
-                "score": round(score, 4),
-            }
-        )
-
-    return cities, len(cities)
+from openaddrbr.core._env import get_sgeodb_path
+from openaddrbr.services._city_search import search_city_tantivy
 
 
 def get_test_samples(db_path, n=1000):
@@ -131,12 +53,6 @@ def run_benchmark():
     print("CITY AUTOCOMPLETE BENCHMARK")
     print("=" * 60)
 
-    print("\nLoading index...")
-    start = time.time()
-    index = load_index()
-    load_time = time.time() - start
-    print(f"Index loaded in {load_time:.3f}s")
-
     print("\nGetting test samples from database...")
     samples = get_test_samples(str(get_sgeodb_path()), 1000)
     print(f"Loaded {len(samples)} samples")
@@ -173,13 +89,13 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results, count = search_cities(index, query, limit=10)
+                results = search_city_tantivy(query, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time
                 queries_tested += 1
 
-                found = any(r["city_code"] == city_code for r in results)
+                found = any(r.city_code == city_code for r in results)
                 if found:
                     total_found += 1
                 total_expected += 1
@@ -192,7 +108,7 @@ def run_benchmark():
                             "found": found,
                             "results_count": len(results),
                             "time_ms": round(query_time * 1000, 2),
-                            "first_result": results[0]["city_name"] if results else None,
+                            "first_result": results[0].city_name if results else None,
                         }
                     )
 
