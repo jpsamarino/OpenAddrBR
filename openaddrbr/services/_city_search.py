@@ -26,22 +26,6 @@ def _get_index():
     return _index
 
 
-def _get_city_coordinates(city_code: int) -> tuple[float, float]:
-    """Look up city reference coordinates from database by city_code."""
-    from openaddrbr.core._database import Database
-
-    db = Database()
-    cursor = db._get_cursor()
-    cursor.execute(
-        "SELECT ref_latitude, ref_longitude FROM cities WHERE city_code = ? LIMIT 1",
-        (city_code,),
-    )
-    row = cursor.fetchone()
-    if row:
-        return (row[0], row[1])
-    return (0.0, 0.0)
-
-
 def text_to_ascii(text: str) -> str:
     """Normalize text for ASCII, uppercase."""
     if not text:
@@ -98,16 +82,14 @@ def search_city_tantivy(query: str, limit: int = 10) -> list[CityInfo]:
     cities = []
     for score, doc_address in results.hits:
         doc = searcher.doc(doc_address)
-        city_code = doc.get_first("city_code")
-        lat, lon = _get_city_coordinates(city_code)
         cities.append(
             CityInfo(
-                city_code=city_code,
+                city_code=doc.get_first("city_code"),
                 city_name=doc.get_first("city_name"),
                 city_normalized=doc.get_first("city_normalized"),
                 state_code=doc.get_first("state_code"),
-                latitude=lat,
-                longitude=lon,
+                latitude=doc.get_first("ref_latitude"),
+                longitude=doc.get_first("ref_longitude"),
             )
         )
 
