@@ -1,12 +1,7 @@
 """Usearch vector index — thread-safe with lazy initialization."""
 
-
 import numpy as np
-
-try:
-    from usearch.index import Index as usearch_Index
-except ImportError:
-    usearch_Index = None
+from usearch.index import Index as usearch_Index
 
 from openaddrbr.core._env import get_usearch_dir
 
