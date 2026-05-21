@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from openaddrbr.core._env import get_default_batch_size
+from openaddrbr.core.interfaces import GeocoderDB
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
@@ -28,7 +29,7 @@ from openaddrbr.services import (
 from openaddrbr.utils import normalize_text, text_similarity
 
 
-def _find_best_geo_location(db, street_id: int, number: int, limit_numbers: int = 3) -> GeoLocation | None:
+def _find_best_geo_location(db: GeocoderDB, street_id: int, number: int, limit_numbers: int = 3) -> GeoLocation | None:
     """Find best geo location for street_id and number with parity matching."""
     rows = db.query_geo_locations(street_id, number, limit_numbers)
     if not rows:
@@ -68,7 +69,7 @@ def _build_result(
     cep: str | None,
     number: int,
     city_info: CityCore,
-    db,
+    db: GeocoderDB,
 ) -> AddressInfo | None:
     """Build AddressInfo from street_cluster."""
     street_id = street_cluster.street_id
