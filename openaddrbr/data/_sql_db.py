@@ -1,4 +1,4 @@
-"""Database — thread-safe connection pool with bounded LRU caches."""
+"""SQLite database — thread-safe connection pool with bounded LRU caches."""
 
 import array
 import threading
@@ -18,7 +18,7 @@ from openaddrbr.core.models import (
 from openaddrbr.utils import normalize_text
 
 
-class Database(GeocoderDB):
+class SQLDB(GeocoderDB):
     """Thread-safe database accessor with connection pooling and bounded caches.
 
     Args:

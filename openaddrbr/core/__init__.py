@@ -1,7 +1,5 @@
-"""Core package - Geocoder, Encoder, Database classes."""
+"""Core package - Geocoder class."""
 
-from openaddrbr.core._database import Database
-from openaddrbr.core._encoder import Encoder
 from openaddrbr.core._geocoder import Geocoder
 
-__all__ = ["Geocoder", "Encoder", "Database"]
+__all__ = ["Geocoder"]
