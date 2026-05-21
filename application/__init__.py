@@ -1,7 +1,7 @@
 """Compatibility shim - wraps function-based API into class."""
 
 from openaddrbr import geocode as _geocode
-from openaddrbr.core._database import Database
+from openaddrbr.data._sql_db import SQLDB as Database
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import (
     search_vector as _search_vector_index,
