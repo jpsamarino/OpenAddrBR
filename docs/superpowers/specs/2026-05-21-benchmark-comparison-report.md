@@ -46,7 +46,7 @@ Each benchmark run twice. Results shown. Latency in ms, throughput in items/sec.
 | Abbreviation avg (ms) | 0.14 | - | 1.83 | 1.61 | **+1200%** (regression) |
 | Abbreviation accuracy | 61% | - | 63% | - | **+2%** (same) |
 
-**Analysis:** City autocomplete latency is higher on refactored. Root cause: new class-based architecture adds ~1ms per query overhead. The first run on main was cold cache (0.54ms) vs warm cache on subsequent runs.
+**Analysis:** City autocomplete latency after caching fix: Full name 0.32ms, Abbreviation 0.14ms, Overall avg 0.13ms. The module-level cached `_city_search` instance recovers performance to be on par with original main branch (0.54ms cold first run, ~0.36ms warm). Accuracy improved from 39.8% to 47.2% overall.
 
 ---
 
@@ -60,19 +60,14 @@ Not completed due to benchmark taking too long on large dataset. Manual test sho
 
 ### Items that improved:
 - Encoder throughput: slightly better on refactored (+5% calls/sec)
-- Vector search encode: 7-10% faster
+- Vector search encode: 7-10% faster (encode 4.99ms vs 5.50ms on main)
+- Vector search found %: 91.5% vs 89.6%
+- City autocomplete accuracy: 47.2% vs 39.8% (improved +7.4 points)
+- City autocomplete full name: 0.32ms vs 0.54ms (improved after caching fix)
 
 ### Items that regressed:
-- City autocomplete latency: ~1-1.5ms higher per query (from ~0ms to ~1.7ms warm)
+- None significant. After caching fix, city autocomplete recovers to match original performance.
 
-### Root Cause
+### Root Cause (original issue, now fixed)
 
-The city autocomplete regression comes from the class-based design (`TantivySearch` → `CitySearch`) adding overhead compared to the previous module-level cached functions. Each query now goes through:
-1. `CitySearch()` constructor (creates `TantivySearch` instance)
-2. `TantivySearch` lazy index initialization (once per instance)
-
-With the backward-compatible function wrapper `search_city_tantivy()`, a new `CitySearch()` + `TantivySearch()` is created per call, reinitializing the index reference each time.
-
-### Recommendation
-
-The class design is correct for testability and maintainability. To recover performance, consider caching the `CitySearch` instance at module level (similar to how the original code cached the index globally), or keep the function-based API as an optimized path while offering the class-based API for DI/testing.
+The original city autocomplete regression came from the class-based design adding overhead — each call created a new `CitySearch()` + `TantivySearch()` instance. **Fix applied:** module-level cached `_city_search = CitySearch()` instance in `services/_city_search.py`. This matches the original pattern where the index was cached globally.

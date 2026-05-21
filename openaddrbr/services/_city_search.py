@@ -42,7 +42,10 @@ class CitySearch:
         return cities
 
 
-# Backward compatibility function
+# Cached instance — index opens once, reused across all calls
+_city_search = CitySearch()
+
+
 def search_city_tantivy(query: str, limit: int = 10) -> list[CityInfo]:
     """Search for cities using ngram autocomplete (backward compat)."""
-    return CitySearch().search(query, limit)
+    return _city_search.search(query, limit)
