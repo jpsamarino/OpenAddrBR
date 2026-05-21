@@ -1,9 +1,9 @@
 """OpenAddrBR - Brazilian address geocoder using vector search."""
 
 from openaddrbr.core._geocoder import Geocoder
-from openaddrbr.core.models import AddressInfo, AddressRequest, CityInfo
+from openaddrbr.core.models import AddressInfo, AddressRequest, CityInfo, NeighborhoodInfo
 
-__all__ = ["Geocoder", "geocode", "get_geo_info_batch"]
+__all__ = ["Geocoder", "geocode", "get_geo_info_batch", "NeighborhoodInfo"]
 
 
 # Lazy-initialized default geocoder instance for backwards-compatible function API

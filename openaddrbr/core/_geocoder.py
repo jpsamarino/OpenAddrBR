@@ -12,12 +12,14 @@ from openaddrbr.core.models import (
     CityCore,
     CityInfo,
     GeoLocation,
+    NeighborhoodInfo,
     StreetCluster,
 )
 from openaddrbr.core.models._models import GeoLocationResult
 from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
 from openaddrbr.services._city import get_city_info
 from openaddrbr.services._city_search import search_city_tantivy
+from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
 from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text, text_similarity
 
@@ -209,6 +211,21 @@ class Geocoder:
             List of CityInfo objects with coordinates
         """
         return search_city_tantivy(query, limit)
+
+    def search_neighborhood(
+        self, query: str, city_code: int, limit: int = 10
+    ) -> list[NeighborhoodInfo]:
+        """Search for neighborhoods by name using ngram autocomplete.
+
+        Args:
+            query: Neighborhood name query (partial match supported)
+            city_code: IBGE city code to filter results
+            limit: Maximum number of results
+
+        Returns:
+            List of NeighborhoodInfo objects with coordinates
+        """
+        return search_neighborhood_tantivy(query, city_code, limit)
 
 
 class _NormalizedAddr:
