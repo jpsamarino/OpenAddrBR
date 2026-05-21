@@ -1,6 +1,5 @@
 """City autocomplete using Tantivy ngram index."""
 
-from openaddrbr.core._env import get_tantivy_dir
 from openaddrbr.core.models import CityInfo
 from openaddrbr.data import TantivySearch
 from openaddrbr.utils import normalize_text

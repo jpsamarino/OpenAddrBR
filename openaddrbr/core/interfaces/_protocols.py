@@ -2,13 +2,9 @@
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-import numpy as np
-
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
-    CityCore,
-    StreetCluster,
 )
 
 if TYPE_CHECKING:

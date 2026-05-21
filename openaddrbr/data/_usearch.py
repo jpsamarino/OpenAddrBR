@@ -1,6 +1,5 @@
 """Usearch vector index — thread-safe with lazy initialization."""
 
-from pathlib import Path
 
 import numpy as np
 
