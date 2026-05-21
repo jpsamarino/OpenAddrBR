@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openaddrbr.core._database import CityRecord
+from openaddrbr.core.models import CityRecord
 from openaddrbr.core._geocoder import Geocoder
 from openaddrbr.core.models import AddressRequest, CityCore
 
