@@ -79,6 +79,31 @@ addresses = [
 results = geocoder.geocode_batch(addresses, batch_size=16)
 ```
 
+#### City Search
+
+```python
+from openaddrbr import Geocoder, CityInfo
+
+geocoder = Geocoder()
+cities = geocoder.search_city("Sao Paulo", limit=5)
+# Returns list[CityInfo] with city_code, city_name, city_normalized, state_code, latitude, longitude
+for city in cities:
+    print(f"{city.city_name}, {city.state_code} ({city.city_code})")
+```
+
+#### Neighborhood Search
+
+```python
+from openaddrbr import Geocoder, NeighborhoodInfo
+
+geocoder = Geocoder()
+# Requires city_code to filter by city
+neighborhoods = geocoder.search_neighborhood("centro", city_code=3550308, limit=5)
+# Returns list[NeighborhoodInfo] with neighborhood_name, neighborhood_normalized, city_code, latitude, longitude
+for n in neighborhoods:
+    print(f"{n.neighborhood_name} (lat={n.latitude}, lon={n.longitude})")
+```
+
 ### Function API (Backwards Compatible)
 
 For simple scripts, the function API still works:
