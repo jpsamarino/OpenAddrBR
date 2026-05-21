@@ -7,7 +7,7 @@ from openaddrbr.core._env import (
     get_usearch_dir,
     set_data_path,
 )
-from openaddrbr.data._hf_downloader import check_data_exists, download_data
+from openaddrbr.data._data_download import check_data_exists, download_data
 from openaddrbr.data._usearch import get_semantic_index, search_vector
 
 __all__ = [
