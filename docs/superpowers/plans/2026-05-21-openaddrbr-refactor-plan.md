@@ -957,7 +957,114 @@ git commit -m "benchmark: fix imports after restructuring"
 
 ---
 
-## Task 14: Final verification — run full test suite
+## Task 14: Benchmark comparison report — main vs refactored
+
+**Goal:** Run each benchmark 2× on `main` and 2× on the refactored branch, produce a comparison report.
+
+**Benchmarks to compare:**
+- `benchmarks/benchmark_encoder.py` — Encoder throughput (ms/text)
+- `benchmarks/benchmark_vector_search.py` — Vector search latency (ms/query)
+- `benchmarks/benchmark_city_autocomplete.py` — City search latency (ms/query)
+- `benchmarks/benchmark_neighborhood_autocomplete.py` — Neighborhood search latency (ms/query)
+- `benchmarks/benchmark_usearch_memory.py` — Memory usage check
+- `benchmarks/benchmark_api_comparison.py` — End-to-end geocoding latency
+- `benchmarks/benchmark_db_sync.py` — DB query latency
+
+**Files:**
+- Create: `docs/superpowers/plans/2026-05-21-benchmark-comparison-report.md`
+
+- [ ] **Step 1: On main branch, stash any pending changes and ensure clean state**
+
+```bash
+git stash
+git checkout main
+```
+
+- [ ] **Step 2: Run benchmarks on main — 2 runs each, record results**
+
+Run each benchmark twice, capture timing output. Example for encoder:
+
+```bash
+# Run 1
+python -m benchmarks.benchmark_encoder 2>&1 | tee /tmp/encoder_main_run1.txt
+# Run 2
+python -m benchmarks.benchmark_encoder 2>&1 | tee /tmp/encoder_main_run2.txt
+```
+
+Repeat for all benchmarks. Store results in `/tmp/benchmark_main_*.txt`.
+
+- [ ] **Step 3: Checkout refactored branch**
+
+```bash
+git checkout -
+# or git checkout refactor-branch-name
+```
+
+- [ ] **Step 4: Run benchmarks on refactored branch — 2 runs each, record results**
+
+Same as Step 2, store in `/tmp/benchmark_refactored_*.txt`.
+
+- [ ] **Step 5: Create comparison report**
+
+Create `docs/superpowers/plans/2026-05-21-benchmark-comparison-report.md` with:
+
+```markdown
+# Benchmark Comparison Report
+
+**Date:** 2026-05-21
+**Baseline:** main branch (before refactoring)
+**Comparison:** refactored branch (after restructuring)
+
+## Methodology
+
+Each benchmark run twice. Results shown as: mean ± stddev.
+Latency in ms, throughput in items/sec, memory in MB.
+
+## Results
+
+| Benchmark | Metric | main (run1) | main (run2) | refactored (run1) | refactored (run2) | Δ% |
+|-----------|--------|-------------|-------------|-------------------|-------------------|-----|
+| benchmark_encoder | ms/text | X | X | X | X | ±Y% |
+| benchmark_vector_search | ms/query | X | X | X | X | ±Y% |
+| benchmark_city_autocomplete | ms/query | X | X | X | X | ±Y% |
+| benchmark_neighborhood_autocomplete | ms/query | X | X | X | X | ±Y% |
+| benchmark_api_comparison | ms/geocode | X | X | X | X | ±Y% |
+| benchmark_db_sync | ms/query | X | X | X | X | ±Y% |
+
+## Analysis
+
+### Items that improved:
+- (list with explanation)
+
+### Items that regressed:
+- (list with explanation and root cause)
+
+### Items with no significant change:
+- (list)
+
+## Root Cause Analysis
+
+For each regression, investigate:
+1. Extra import overhead (new module resolution)
+2. Class instantiation overhead vs function calls
+3. Caching behavior differences (global vs class)
+4. Any algorithmic changes
+
+## Recommendations
+
+- (actionable items to fix regressions, if any)
+```
+
+- [ ] **Step 6: Commit comparison report**
+
+```bash
+git add docs/superpowers/plans/2026-05-21-benchmark-comparison-report.md
+git commit -m "docs: add benchmark comparison report main vs refactored"
+```
+
+---
+
+## Task 15: Final verification — run full test suite
 
 **Files:**
 - Run: all tests and benchmarks
@@ -1004,4 +1111,5 @@ git commit -m "chore: complete refactoring — restructured core/data/services"
 11. **__main__.py** — create for `python -m openaddrbr`
 12. **tests/** — fix broken imports
 13. **benchmarks/** — fix broken imports
-14. **Final verification** — run full test suite
+14. **Benchmark comparison report** — main vs refactored, 2× runs each
+15. **Final verification** — run full test suite
