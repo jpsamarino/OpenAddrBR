@@ -8,7 +8,7 @@ from openaddrbr.core._env import (
     set_data_path,
 )
 from openaddrbr.data._data_download import check_data_exists, download_data
-from openaddrbr.data._usearch import get_semantic_index, search_vector
+from openaddrbr.data._usearch import UsearchIndex, get_semantic_index, search_vector
 
 __all__ = [
     "get_data_path",
@@ -20,4 +20,5 @@ __all__ = [
     "download_data",
     "get_semantic_index",
     "search_vector",
+    "UsearchIndex",
 ]

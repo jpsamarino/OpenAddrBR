@@ -4,7 +4,7 @@ import numpy as np
 
 from openaddrbr.core.interfaces._protocols import GeocoderDB
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import search_vector as search_vector_index
+from openaddrbr.data._usearch import UsearchIndex
 from openaddrbr.utils import find_best_street_match
 
 
@@ -19,7 +19,7 @@ def search_by_embedding(
     if embedding is None or street_norm is None:
         return None
 
-    query_ids = search_vector_index(embedding, city_code, limit=20)
+    query_ids = UsearchIndex.search(embedding, city_code, limit=20)
     if not query_ids:
         return None
 
