@@ -101,10 +101,10 @@ class TantivySearch:
 
         subqueries.append((Occur.Should, ngram_query))
 
-        # min_match=1 means at least one token must match
+        # When no city_code filter: use Must(ngram_query) to require at least one match
+        # When city_code is set: use all subqueries (Must city_code + Should ngram_query)
         final_query = tantivy.Query.boolean_query(
-            [(Occur.Must, ngram_query)] if city_code is None else subqueries,
-            1,
+            subqueries, 1,
         )
         results = searcher.search(final_query, limit=limit)
-        return [(float(score), int(doc_address)) for score, doc_address in results.hits]
+        return [(float(score), doc_address) for score, doc_address in results.hits]
