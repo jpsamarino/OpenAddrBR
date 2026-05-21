@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from openaddrbr.core._encoder import Encoder
+from openaddrbr.services._encoder import Encoder
 from openaddrbr.utils import normalize_text
 
 

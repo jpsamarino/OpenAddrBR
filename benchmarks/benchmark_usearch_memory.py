@@ -12,9 +12,9 @@ from pathlib import Path
 
 import psutil
 
-from openaddrbr.core._database import Database
+from openaddrbr.data._sql_db import SQLDB as Database
 from openaddrbr.core._env import get_usearch_dir
-from openaddrbr.data._usearch import get_semantic_index
+from openaddrbr.data._usearch import UsearchIndex
 
 
 def get_city_codes(limit=None):
@@ -69,43 +69,42 @@ def main():
     test_sizes = [10, 50, 100, 500, 1000]
 
     for size in test_sizes:
-        get_semantic_index.cache_clear()
+        UsearchIndex.clear_cache()
 
         mem_before = process.memory_info().rss / 1024 / 1024
         loaded = 0
 
         for code in codes[:size]:
-            get_semantic_index(code)
+            UsearchIndex.get(code)
             loaded += 1
 
         mem_after = process.memory_info().rss / 1024 / 1024
         delta = mem_after - mem_before
-
-        info = get_semantic_index.cache_info()
+        cache_size = len(UsearchIndex._cache)
 
         print(f"  Load {loaded} indices:")
         print(f"    RAM before:   {mem_before:.1f} MB")
         print(f"    RAM after:    {mem_after:.1f} MB")
         print(f"    Delta (RSS):  {delta:+.1f} MB")
-        print(f"    Cache size:   {info.currsize}/{info.maxsize}")
+        print(f"    Cache size:   {cache_size}")
         print()
 
     # Load ALL
     print("  Load ALL (2449) indices:")
-    get_semantic_index.cache_clear()
+    UsearchIndex.clear_cache()
     mem_before = process.memory_info().rss / 1024 / 1024
 
     for code in codes:
-        get_semantic_index(code)
+        UsearchIndex.get(code)
 
     mem_after = process.memory_info().rss / 1024 / 1024
     delta = mem_after - mem_before
-    info = get_semantic_index.cache_info()
+    cache_size = len(UsearchIndex._cache)
 
     print(f"    RAM before:   {mem_before:.1f} MB")
     print(f"    RAM after:    {mem_after:.1f} MB")
     print(f"    Delta (RSS):  {delta:+.1f} MB")
-    print(f"    Cache size:   {info.currsize}/{info.maxsize}")
+    print(f"    Cache size:   {cache_size}")
     print()
 
     print("=" * 60)

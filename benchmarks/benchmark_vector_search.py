@@ -11,8 +11,8 @@ import time
 from io import StringIO
 from pathlib import Path
 
-from openaddrbr.core._database import Database
-from openaddrbr.core._encoder import Encoder
+from openaddrbr.data._sql_db import SQLDB as Database
+from openaddrbr.services._encoder import Encoder
 from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text
 
