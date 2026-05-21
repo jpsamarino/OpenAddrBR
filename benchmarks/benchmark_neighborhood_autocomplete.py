@@ -1,7 +1,6 @@
 """
-Benchmark for neighborhood autocomplete using Tantivy.
+Benchmark for neighborhood autocomplete using our search_neighborhood_tantivy implementation.
 Tests performance and accuracy with various query patterns.
-Uses same BooleanQuery + SHOULD approach as server.py.
 """
 
 import json
@@ -9,81 +8,18 @@ import random
 import time
 from pathlib import Path
 
-import tantivy
-from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
+from openaddrbr.core._env import get_tantivy_dir
+from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
 
-# Benchmark configuration
+
 SAMPLES_LIMIT = 10000  # Number of samples to test per case (10k for cache warming)
-
-INDEX_PATH = "./neighborhood_index"
-SAMPLES_PATH = "./benchmark_neighborhoods.json"
-
-# Global — same as server.py
-_ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
-
-
-def load_index():
-    """Load the index and register tokenizer."""
-    index = tantivy.Index.open(INDEX_PATH)
-    index.register_tokenizer("ngram", _ngram_analyzer)
-    return index
 
 
 def load_samples():
     """Load benchmark samples from JSON."""
-    with open(SAMPLES_PATH, "r", encoding="utf-8") as f:
+    samples_path = Path(__file__).parent / "benchmark_neighborhoods.json"
+    with open(samples_path, "r", encoding="utf-8") as f:
         return json.load(f)
-
-
-def build_neighborhood_query(query_text: str, city_code: int, schema):
-    """
-    BooleanQuery with SHOULD (OR) per token — same logic as server.py.
-    Includes city_code filter (Must) + ngram tokens (Should).
-    """
-    tokens = _ngram_analyzer.analyze(query_text)
-    if not tokens:
-        return None
-
-    subqueries = []
-
-    # City filter - Must
-    if city_code:
-        city_filter = tantivy.Query.term_query(schema, "city_code", city_code)
-        subqueries.append((Occur.Must, city_filter))
-
-    # Ngram tokens - Should
-    for token in tokens:
-        tq = tantivy.Query.term_query(schema, "neighborhood_search", token)
-        subqueries.append((Occur.Should, tq))
-
-    # Always use min_match=1 for performance
-    return tantivy.Query.boolean_query(subqueries, 1)
-
-
-def search_neighborhoods(index, query, city_code, limit=10):
-    """Search for neighborhoods using the autocomplete index."""
-    searcher = index.searcher()
-    schema = index.schema
-
-    tantivy_query = build_neighborhood_query(query, city_code, schema)
-    if tantivy_query is None:
-        return [], 0
-
-    results = searcher.search(tantivy_query, limit=limit)
-
-    neighborhoods = []
-    for score, doc_address in results.hits:
-        doc = searcher.doc(doc_address)
-        neighborhoods.append(
-            {
-                "neighborhood_code": doc.get_first("neighborhood_code"),
-                "city_code": doc.get_first("city_code"),
-                "neighborhood_name": doc.get_first("neighborhood_name"),
-                "score": round(score, 4),
-            }
-        )
-
-    return neighborhoods, len(neighborhoods)
 
 
 def mutate_query(neighborhood_normalized, mutation_type="random"):
@@ -118,12 +54,6 @@ def run_benchmark():
     print("=" * 60)
     print("NEIGHBORHOOD AUTOCOMPLETE BENCHMARK")
     print("=" * 60)
-
-    print("\nLoading index...")
-    start = time.time()
-    index = load_index()
-    load_time = time.time() - start
-    print(f"Index loaded in {load_time:.3f}s")
 
     print("\nLoading benchmark samples...")
     samples = load_samples()
@@ -177,7 +107,7 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results, count = search_neighborhoods(index, query, city_code, limit=10)
+                results = search_neighborhood_tantivy(query, city_code, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time
@@ -185,7 +115,7 @@ def run_benchmark():
 
                 # Check if expected neighborhood is in results
                 found = any(
-                    r["neighborhood_code"] == f"{city_code}_{neighborhood_normalized[:20]}"
+                    r.neighborhood_normalized[:20] == neighborhood_normalized[:20]
                     for r in results
                 )
                 if found:
@@ -200,7 +130,7 @@ def run_benchmark():
                             "found": found,
                             "results_count": len(results),
                             "time_ms": round(query_time * 1000, 2),
-                            "first_result": (results[0]["neighborhood_name"] if results else None),
+                            "first_result": (results[0].neighborhood_name if results else None),
                         }
                     )
 
