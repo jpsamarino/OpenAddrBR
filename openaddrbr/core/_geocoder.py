@@ -11,7 +11,6 @@ from openaddrbr.core.models import (
     CityCore,
     CityInfo,
     GeoLocation,
-    GeoLocationResult,
     NeighborhoodInfo,
     NormalizedAddress,
     StreetCluster,
@@ -278,7 +277,7 @@ class Geocoder:
             key=lambda n: (n.city_info.city_code, n.street_norm),
         )
 
-        results: list[GeoLocationResult | None] = [None] * len(addresses)
+        results: list[AddressInfo | None] = [None] * len(addresses)
 
         for i in range(0, len(valid), batch_size):
             batch = valid[i : i + batch_size]

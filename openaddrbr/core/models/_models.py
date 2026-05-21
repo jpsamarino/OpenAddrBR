@@ -56,7 +56,7 @@ class StreetInfo:
 
 @dataclass
 class AddressInfo:
-    """Result of a geocoding operation (renamed from GeoLocationResult)."""
+    """Result of a geocoding operation."""
 
     lat: float
     long: float
@@ -89,22 +89,6 @@ class AddressRequest:
     neighborhood: str = ""
     zip_code: str | None = None
     street_number: int = 0
-
-
-@dataclass(slots=True)
-class GeoLocationResult:
-    """Result of a geocoding operation."""
-
-    lat: float
-    long: float
-    street_name: str
-    neighborhood: str
-    city: str
-    state: str
-    zip_code: str
-    number: int
-    ref_number_lat_long: int
-    address: str = ""
 
 
 class NormalizedAddress(NamedTuple):

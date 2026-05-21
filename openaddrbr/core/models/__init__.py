@@ -12,15 +12,11 @@ from openaddrbr.core.models._models import (
     CityCore,
     CityInfo,
     GeoLocation,
-    GeoLocationResult,
     NeighborhoodInfo,
     NormalizedAddress,
     StreetCluster,
     StreetInfo,
 )
-
-# Backward compatibility alias
-GeoLocationResult = AddressInfo
 
 __all__ = [
     # DB records
@@ -38,5 +34,4 @@ __all__ = [
     "GeoLocation",
     "NormalizedAddress",
     "AddressRequest",
-    "GeoLocationResult",  # backward compat alias
 ]
