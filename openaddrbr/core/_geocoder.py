@@ -14,14 +14,18 @@ from openaddrbr.core.models import (
     StreetCluster,
 )
 from openaddrbr.core.models._models import GeoLocationResult
-from openaddrbr.data._sql_db import SQLDB
-from openaddrbr.services._cep import is_multi_street_cep, search_by_cep
-from openaddrbr.services._city import get_city_info
-from openaddrbr.services._city_search import search_city_tantivy
-from openaddrbr.services._encoder import Encoder
-from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
-from openaddrbr.services._result_builder import _build_result, _NormalizedAddr
-from openaddrbr.services._vector_search import search_by_embedding
+from openaddrbr.data import SQLDB
+from openaddrbr.services import (
+    Encoder,
+    _build_result,
+    _NormalizedAddr,
+    get_city_info,
+    is_multi_street_cep,
+    search_by_cep,
+    search_by_embedding,
+    search_city_tantivy,
+    search_neighborhood_tantivy,
+)
 from openaddrbr.utils import normalize_text, text_similarity
 
 

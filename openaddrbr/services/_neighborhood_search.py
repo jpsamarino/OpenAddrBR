@@ -1,7 +1,7 @@
 """Neighborhood autocomplete using Tantivy ngram index."""
 
 from openaddrbr.core.models import NeighborhoodInfo
-from openaddrbr.data._tantivy import TantivySearch
+from openaddrbr.data import TantivySearch
 from openaddrbr.utils import normalize_text
 
 

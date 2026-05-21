@@ -14,9 +14,9 @@ def get_city_info(city: str, state: str, db: GeocoderDB | None = None) -> CityCo
     """
     if db is None:
         # Fallback for backward compat during transition
-        from openaddrbr.core._database import Database
+        from openaddrbr.data import SQLDB
 
-        db = Database()
+        db = SQLDB()
 
     record = db.get_city_info_from_db(city, state)
     if not record:

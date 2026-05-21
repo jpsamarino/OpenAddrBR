@@ -2,7 +2,7 @@
 
 from openaddrbr.core._env import get_tantivy_dir
 from openaddrbr.core.models import CityInfo
-from openaddrbr.data._tantivy import TantivySearch
+from openaddrbr.data import TantivySearch
 from openaddrbr.utils import normalize_text
 
 

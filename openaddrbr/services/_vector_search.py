@@ -4,7 +4,7 @@ import numpy as np
 
 from openaddrbr.core.interfaces._protocols import GeocoderDB
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data._usearch import UsearchIndex
+from openaddrbr.data import UsearchIndex
 from openaddrbr.utils import find_best_street_match
 
 

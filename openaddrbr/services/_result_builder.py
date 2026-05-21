@@ -4,6 +4,8 @@ from openaddrbr.core.models import StreetCluster
 from openaddrbr.core.models._models import AddressInfo, CityCore, GeoLocation
 from openaddrbr.utils import normalize_text, text_similarity
 
+__all__ = ["_build_result", "_NormalizedAddr"]
+
 
 class _NormalizedAddr:
     """Normalized address data used in batch processing."""
