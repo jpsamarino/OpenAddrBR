@@ -11,6 +11,7 @@ from openaddrbr.core.models import (
     CityInfo,
     GeoLocation,
     NeighborhoodInfo,
+    NormalizedAddress,
     StreetCluster,
 )
 from openaddrbr.core.models._models import GeoLocationResult
@@ -18,7 +19,6 @@ from openaddrbr.data import SQLDB
 from openaddrbr.services import (
     Encoder,
     _build_result,
-    _NormalizedAddr,
     get_city_info,
     is_multi_street_cep,
     search_by_cep,
@@ -137,13 +137,13 @@ class Geocoder:
             batch_size = self.batch_size
 
         # Normalize all addresses
-        normalized: list[_NormalizedAddr] = []
+        normalized: list[NormalizedAddress] = []
         for i, addr in enumerate(addresses):
             city_info = get_city_info(addr.city, addr.state, db=self.db)
             if not city_info:
                 continue
             normalized.append(
-                _NormalizedAddr(
+                NormalizedAddress(
                     order=i,
                     address=addr,
                     city_info=city_info,

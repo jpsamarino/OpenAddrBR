@@ -4,30 +4,7 @@ from openaddrbr.core.models import StreetCluster
 from openaddrbr.core.models._models import AddressInfo, CityCore, GeoLocation
 from openaddrbr.utils import normalize_text, text_similarity
 
-__all__ = ["_build_result", "_NormalizedAddr"]
-
-
-class _NormalizedAddr:
-    """Normalized address data used in batch processing."""
-    __slots__ = ("order", "address", "city_info", "street_norm", "neighborhood_norm", "zip_code", "number")
-
-    def __init__(
-        self,
-        order: int,
-        address,
-        city_info,
-        street_norm: str,
-        neighborhood_norm: str,
-        zip_code: str | None,
-        number: int,
-    ):
-        self.order = order
-        self.address = address
-        self.city_info = city_info
-        self.street_norm = street_norm
-        self.neighborhood_norm = neighborhood_norm
-        self.zip_code = zip_code
-        self.number = number
+__all__ = ["_build_result"]
 
 
 def _find_best_geo_location(db, street_id: int, number: int, limit_numbers: int = 3) -> GeoLocation | None:
