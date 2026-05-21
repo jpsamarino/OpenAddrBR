@@ -1,59 +1,48 @@
-"""Neighborhood autocomplete search using Tantivy ngram index."""
+"""Neighborhood autocomplete using Tantivy ngram index."""
 
-import tantivy
-from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
-
-from openaddrbr.core._env import get_tantivy_dir
 from openaddrbr.core.models import NeighborhoodInfo
+from openaddrbr.data._tantivy import TantivySearch
 from openaddrbr.utils import normalize_text
 
-_ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
-_index = None
 
-def _get_index():
-    global _index
-    if _index is None:
-        index_path = str(get_tantivy_dir() / "neighborhood_index")
-        _index = tantivy.Index.open(index_path)
-        _index.register_tokenizer("ngram", _ngram_analyzer)
-    return _index
+class NeighborhoodSearch:
+    """Neighborhood autocomplete using tantivy ngram index."""
 
-def build_neighborhood_query(query_text: str, city_code: int, schema) -> tantivy.Query | None:
-    tokens = _ngram_analyzer.analyze(query_text)
-    if not tokens:
-        return None
+    def __init__(self, tantivy_search: TantivySearch | None = None):
+        self._ts = tantivy_search or TantivySearch("neighborhood_index")
 
-    subqueries = [(Occur.Must, tantivy.Query.term_query(schema, "city_code", city_code))]
-    for token in tokens:
-        subqueries.append((Occur.Should, tantivy.Query.term_query(schema, "neighborhood_search", token)))
+    def search(self, query: str, city_code: int, limit: int = 10) -> list[NeighborhoodInfo]:
+        """Search for neighborhoods by name within city."""
+        query_normalized = normalize_text(query)
+        if not query_normalized:
+            return []
 
-    return tantivy.Query.boolean_query(subqueries, 1)
+        hits = self._ts.search_raw(
+            query_normalized, "neighborhood_search", city_code=city_code, limit=limit
+        )
+        if not hits:
+            return []
 
+        index = self._ts._get_index()
+        searcher = index.searcher()
+
+        neighborhoods = []
+        for score, doc_address in hits:
+            doc = searcher.doc(doc_address)
+            neighborhood_name = doc.get_first("neighborhood_name") or ""
+            neighborhoods.append(
+                NeighborhoodInfo(
+                    neighborhood_name=neighborhood_name,
+                    neighborhood_normalized=normalize_text(neighborhood_name),
+                    city_code=doc.get_first("city_code"),
+                    latitude=doc.get_first("ref_latitude"),
+                    longitude=doc.get_first("ref_longitude"),
+                )
+            )
+        return neighborhoods
+
+
+# Backward compatibility function
 def search_neighborhood_tantivy(query: str, city_code: int, limit: int = 10) -> list[NeighborhoodInfo]:
-    query_normalized = normalize_text(query)
-    if not query_normalized:
-        return []
-
-    index = _get_index()
-    searcher = index.searcher()
-    schema = index.schema
-
-    tantivy_query = build_neighborhood_query(query_normalized, city_code, schema)
-    if tantivy_query is None:
-        return []
-
-    results = searcher.search(tantivy_query, limit=limit)
-
-    neighborhoods = []
-    for score, doc_address in results.hits:
-        doc = searcher.doc(doc_address)
-        neighborhood_name = doc.get_first("neighborhood_name") or ""
-        neighborhoods.append(NeighborhoodInfo(
-            neighborhood_name=neighborhood_name,
-            neighborhood_normalized=normalize_text(neighborhood_name),
-            city_code=doc.get_first("city_code"),
-            latitude=doc.get_first("ref_latitude"),
-            longitude=doc.get_first("ref_longitude"),
-        ))
-
-    return neighborhoods
+    """Search for neighborhoods by name within city (backward compat)."""
+    return NeighborhoodSearch().search(query, city_code, limit)
