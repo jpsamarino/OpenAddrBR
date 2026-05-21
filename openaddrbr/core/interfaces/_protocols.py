@@ -38,29 +38,6 @@ class GeocoderDB(Protocol):
 
 
 @runtime_checkable
-class CityFinder(Protocol):
-    """Protocol for finding city info by name and state."""
-
-    def get_city_info(self, city_name: str, state_code: str) -> CityCore | None: ...
-
-
-@runtime_checkable
-class StreetSearcher(Protocol):
-    """Protocol for searching streets by CEP or vector."""
-
-    def search_by_cep(
-        self,
-        zip_code: str,
-        street_norm: str,
-        neighborhood_norm: str,
-    ) -> StreetCluster | None: ...
-
-    def search_vector(
-        self, embedding: np.ndarray, city_code: int, limit: int = 20
-    ) -> list[str]: ...
-
-
-@runtime_checkable
 class GeoCoder(Protocol):
     """Protocol for full geocoding operations."""
 

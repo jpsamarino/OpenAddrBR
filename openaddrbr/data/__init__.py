@@ -8,6 +8,8 @@ from openaddrbr.core._env import (
     set_data_path,
 )
 from openaddrbr.data._data_download import check_data_exists, download_data
+from openaddrbr.data._sql_db import SQLDB
+from openaddrbr.data._tantivy import TantivySearch
 from openaddrbr.data._usearch import UsearchIndex, get_semantic_index, search_vector
 
 __all__ = [
@@ -21,4 +23,6 @@ __all__ = [
     "get_semantic_index",
     "search_vector",
     "UsearchIndex",
+    "SQLDB",
+    "TantivySearch",
 ]
