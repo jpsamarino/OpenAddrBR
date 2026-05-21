@@ -5,9 +5,6 @@ from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 
 from openaddrbr.core._env import get_tantivy_dir
 
-# Ngram analyzer built once at module load — reused across all TantivySearch instances
-_ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
-
 
 class TantivySearch:
     """Base class for tantivy text search with lazy index loading.
@@ -15,6 +12,8 @@ class TantivySearch:
     Subclasses should call _get_index() and use search_raw() for basic queries,
     or extend _build_ngram_query() for custom query building.
     """
+
+    _ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
 
     def __init__(self, index_name: str):
         """Initialize with the index directory name (e.g. 'city_index', 'neighborhood_index')."""
@@ -26,7 +25,7 @@ class TantivySearch:
         if self._index is None:
             index_path = str(get_tantivy_dir() / self._index_name)
             self._index = tantivy.Index.open(index_path)
-            self._index.register_tokenizer("ngram", _ngram_analyzer)
+            self._index.register_tokenizer("ngram", self._ngram_analyzer)
         return self._index
 
     def _build_ngram_query(
@@ -47,7 +46,7 @@ class TantivySearch:
         Returns:
             Tantivy Query or None if query_text produces no tokens.
         """
-        tokens = _ngram_analyzer.analyze(query_text)
+        tokens = self._ngram_analyzer.analyze(query_text)
         if not tokens:
             return None
 
