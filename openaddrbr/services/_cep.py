@@ -1,6 +1,6 @@
 """CEP search service - search_by_cep implementation."""
 
-from openaddrbr.core.interfaces._protocols import GeocoderDB
+from openaddrbr.core.interfaces import GeocoderDB
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils import find_best_street_match
 

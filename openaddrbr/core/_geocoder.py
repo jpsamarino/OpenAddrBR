@@ -10,11 +10,11 @@ from openaddrbr.core.models import (
     CityCore,
     CityInfo,
     GeoLocation,
+    GeoLocationResult,
     NeighborhoodInfo,
     NormalizedAddress,
     StreetCluster,
 )
-from openaddrbr.core.models._models import GeoLocationResult
 from openaddrbr.data import SQLDB
 from openaddrbr.services import (
     Encoder,

@@ -1,6 +1,6 @@
 """City info service - get_city_info implementation."""
 
-from openaddrbr.core.interfaces._protocols import GeocoderDB
+from openaddrbr.core.interfaces import GeocoderDB
 from openaddrbr.core.models import CityCore
 
 
