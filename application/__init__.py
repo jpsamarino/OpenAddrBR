@@ -1,15 +1,10 @@
 """Compatibility shim - wraps function-based API into class."""
 
 from openaddrbr import geocode as _geocode
-from openaddrbr.data._sql_db import SQLDB as Database
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import (
-    search_vector as _search_vector_index,
-)
+from openaddrbr.data import SQLDB as Database, UsearchIndex
 from openaddrbr.services._cep import (
     is_multi_street_cep as _is_multi_street_cep,
-)
-from openaddrbr.services._cep import (
     search_by_cep as _search_by_cep,
 )
 from openaddrbr.services._city import get_city_info as _get_city_info
@@ -38,7 +33,7 @@ class IBGEGeocoder:
 
     def search_vector(self, embedding, city_code, limit=20):
         """Search for street by vector similarity using usearch."""
-        query_ids = _search_vector_index(embedding, city_code, limit=limit)
+        query_ids = UsearchIndex.search(embedding, city_code, limit=limit)
         if not query_ids:
             return []
 

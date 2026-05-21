@@ -42,14 +42,3 @@ class UsearchIndex:
     def clear_cache(cls) -> None:
         """Clear index cache — for testing only."""
         cls._cache.clear()
-
-
-# Backward compatibility functions
-def get_semantic_index(city_code: int) -> "usearch_Index | None":
-    """Load usearch city index with LRU cache (backward compat)."""
-    return UsearchIndex.get(city_code)
-
-
-def search_vector(embedding, city_code: int, limit: int = 20) -> list[int]:
-    """Search for query_ids by vector similarity using usearch (backward compat)."""
-    return UsearchIndex.search(embedding, city_code, limit)
