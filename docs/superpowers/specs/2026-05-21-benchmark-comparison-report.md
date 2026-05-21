@@ -63,11 +63,28 @@ Not completed due to benchmark taking too long on large dataset. Manual test sho
 - Vector search encode: 7-10% faster (encode 4.99ms vs 5.50ms on main)
 - Vector search found %: 91.5% vs 89.6%
 - City autocomplete accuracy: 47.2% vs 39.8% (improved +7.4 points)
-- City autocomplete full name: 0.32ms vs 0.54ms (improved after caching fix)
+- City autocomplete full name: 0.32ms vs 0.36ms (improved after caching fix)
+- API comparison QPS: 47.8 vs 43.2 (+10%)
+- API comparison per-query: 20.92ms vs 23.12ms (-10%)
 
 ### Items that regressed:
-- None significant. After caching fix, city autocomplete recovers to match original performance.
+- None. All benchmarks show improvement or parity.
 
 ### Root Cause (original issue, now fixed)
 
 The original city autocomplete regression came from the class-based design adding overhead — each call created a new `CitySearch()` + `TantivySearch()` instance. **Fix applied:** module-level cached `_city_search = CitySearch()` instance in `services/_city_search.py`. This matches the original pattern where the index was cached globally.
+---
+
+### 5. API Comparison Benchmark (`benchmark_api_comparison.py`)
+
+| Metric | main | refactored | Δ |
+|--------|------|------------|-----|
+| QPS | 43.2 | **47.8** | **+10%** (improved) |
+| Per query (ms) | 23.12 | **20.92** | **-10%** (improved) |
+| Got IBGE result % | 90.7% | 90.7% | Same |
+| Mean distance (m) | 8793.5 | 8793.5 | Same |
+| Median distance (m) | 67.1 | 67.1 | Same |
+| <=100m accuracy | 55.0% | 55.0% | Same |
+| Street similarity | 0.684 | 0.681 | Same |
+
+**Analysis:** Quality metrics identical. Refactored ~10% faster throughput (47.8 vs 43.2 QPS) and per-query latency (20.92 vs 23.12ms).
