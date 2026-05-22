@@ -1,4 +1,4 @@
-"""Tantivy text search index — instance-based with configurable data path."""
+"""Text search engine using Tantivy — unified index for cities and neighborhoods."""
 
 from pathlib import Path
 
@@ -8,51 +8,37 @@ from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 from openaddrbr.core._env import get_tantivy_dir
 
 
-class TantivySearch:
-    """Tantivy text search with lazy index loading per instance.
+class TextSearchEngine:
+    """Unified Tantivy text search engine for cities and neighborhoods.
+
+    Loads indices lazily on first use and caches them internally.
+    Single instance manages all text search indices.
 
     Args:
-        index_name: Name of the index directory (e.g. 'city_index', 'neighborhood_index').
-        data_path: Path to data directory. Defaults to env var or package default.
+        data_path: Path to data directory (parent of tantivy/ folder).
+                   Defaults to env var or package default.
     """
 
     _ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
 
-    def __init__(self, index_name: str, data_path: Path | None = None):
-        """Initialize with index name and optional data path.
-
-        Args:
-            index_name: Name of the index directory (e.g. 'city_index', 'neighborhood_index').
-            data_path: Path to data directory (parent of tantivy/ folder).
-                      Defaults to env var or package default.
-        """
-        self._index_name = index_name
+    def __init__(self, data_path: Path | None = None):
         self._data_path = data_path or get_tantivy_dir()
-        self._index: tantivy.Index | None = None
+        self._indices: dict[str, tantivy.Index] = {}
 
-    def _get_index(self) -> tantivy.Index:
-        """Lazy index initialization — called once per instance."""
-        if self._index is None:
-            # _data_path is already the tantivy/ subdir path when using default,
-            # but if user provides data_path we need to append tantivy/
+    def _get_index(self, index_name: str) -> tantivy.Index:
+        """Lazy load index by name."""
+        if index_name not in self._indices:
             base_path = self._data_path
-            # Detect if base_path already includes tantivy/ subfolder
             tantivy_subpath = base_path / "tantivy"
             if tantivy_subpath.exists():
-                index_path = tantivy_subpath / self._index_name
+                index_path = tantivy_subpath / index_name
             else:
-                index_path = base_path / self._index_name
-            self._index = tantivy.Index.open(str(index_path))
-            self._index.register_tokenizer("ngram", self._ngram_analyzer)
-        return self._index
+                index_path = base_path / index_name
 
-    def schema(self):
-        """Return the index schema."""
-        return self._get_index().schema
-
-    def searcher(self):
-        """Return a searcher for this index."""
-        return self._get_index().searcher()
+            index = tantivy.Index.open(str(index_path))
+            index.register_tokenizer("ngram", self._ngram_analyzer)
+            self._indices[index_name] = index
+        return self._indices[index_name]
 
     def _build_ngram_query(
         self,
@@ -82,7 +68,7 @@ class TantivySearch:
         return tantivy.Query.boolean_query(subqueries, min_match)
 
     def search_cities(self, query_text: str, limit: int = 10) -> list[tuple[float, int]]:
-        """Search cities by text only.
+        """Search cities by normalized text.
 
         Args:
             query_text: Normalized city name text.
@@ -91,7 +77,7 @@ class TantivySearch:
         Returns:
             List of (score, doc_address) tuples.
         """
-        index = self._get_index()
+        index = self._get_index("city_index")
         searcher = index.searcher()
         schema = index.schema
 
@@ -105,7 +91,7 @@ class TantivySearch:
     def search_neighborhoods(
         self, query_text: str, city_code: int, limit: int = 10
     ) -> list[tuple[float, int]]:
-        """Search neighborhoods by text filtered by city_code.
+        """Search neighborhoods by normalized text filtered by city code.
 
         Args:
             query_text: Normalized neighborhood name text.
@@ -115,7 +101,7 @@ class TantivySearch:
         Returns:
             List of (score, doc_address) tuples.
         """
-        index = self._get_index()
+        index = self._get_index("neighborhood_index")
         searcher = index.searcher()
         schema = index.schema
 

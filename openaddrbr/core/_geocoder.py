@@ -11,7 +11,7 @@ from openaddrbr.core.models import (
     NormalizedAddress,
 )
 from openaddrbr.data import SQLDB
-from openaddrbr.data._tantivy import TantivySearch
+from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services import (
     Encoder,
@@ -39,6 +39,7 @@ class Geocoder:
         encoder: Optional Encoder instance (for testing). If None, creates default.
         db: Optional SQLDB instance (for testing). If None, creates default.
         usearch_index: Optional VectorSearchEngine instance (for testing). If None, creates default.
+        text_engine: Optional TextSearchEngine instance (for testing). If None, creates default.
     """
 
     def __init__(
@@ -49,16 +50,14 @@ class Geocoder:
         encoder: Encoder | None = None,
         db: SQLDB | None = None,
         usearch_index: VectorSearchEngine | None = None,
-        city_engine: TantivySearch | None = None,
-        neighborhood_engine: TantivySearch | None = None,
+        text_engine: TextSearchEngine | None = None,
     ):
         self.encoder = (
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         )
         self.db = db if db is not None else SQLDB(data_path=data_path)
         self.usearch_index = usearch_index if usearch_index is not None else VectorSearchEngine(data_path=data_path)
-        self.city_engine = city_engine or TantivySearch("city_index", data_path=data_path)
-        self.neighborhood_engine = neighborhood_engine or TantivySearch("neighborhood_index", data_path=data_path)
+        self.text_engine = text_engine or TextSearchEngine(data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()
 
     def geocode(
@@ -225,7 +224,8 @@ class Geocoder:
         Returns:
             List of CityInfo objects with coordinates
         """
-        return search_city_tantivy(query, engine=self.city_engine, limit=limit)
+        from openaddrbr.services._city_search import CitySearch
+        return CitySearch(self.text_engine).search(query, limit=limit)
 
     def search_neighborhood(
         self, query: str, city_code: int, limit: int = 10
@@ -240,4 +240,5 @@ class Geocoder:
         Returns:
             List of NeighborhoodInfo objects with coordinates
         """
-        return search_neighborhood_tantivy(query, city_code, engine=self.neighborhood_engine, limit=limit)
+        from openaddrbr.services._neighborhood_search import NeighborhoodSearch
+        return NeighborhoodSearch(self.text_engine).search(query, city_code, limit=limit)

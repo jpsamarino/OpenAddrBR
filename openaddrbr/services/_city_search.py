@@ -1,24 +1,19 @@
-"""City autocomplete using Tantivy ngram index."""
+"""City autocomplete using TextSearchEngine."""
 
 from openaddrbr.core.models import CityInfo
-from openaddrbr.data import TantivySearch
+from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.utils import normalize_text
 
 
 class CitySearch:
-    """City autocomplete using tantivy ngram index.
+    """City autocomplete using TextSearchEngine.
 
     Args:
-        tantivy_engine: TantivySearch instance. Must have data_path configured.
-
-    Example:
-        engine = TantivySearch("city_index", data_path="/path/to/data")
-        search = CitySearch(tantivy_engine=engine)
-        results = search.search("ARACAJU")
+        text_engine: TextSearchEngine instance with city_index loaded.
     """
 
-    def __init__(self, tantivy_engine: TantivySearch):
-        self._engine = tantivy_engine
+    def __init__(self, text_engine: TextSearchEngine):
+        self._engine = text_engine
 
     def search(self, query: str, limit: int = 10) -> list[CityInfo]:
         """Search for cities by name using ngram autocomplete.
@@ -38,7 +33,9 @@ class CitySearch:
         if not hits:
             return []
 
-        searcher = self._engine.searcher()
+        # Get searcher from the city_index
+        schema = self._engine._get_index("city_index").schema
+        searcher = self._engine._get_index("city_index").searcher()
 
         cities = []
         for score, doc_address in hits:
@@ -57,15 +54,15 @@ class CitySearch:
         return cities
 
 
-def search_city_tantivy(query: str, engine: TantivySearch, limit: int = 10) -> list[CityInfo]:
+def search_city_tantivy(query: str, engine: TextSearchEngine, limit: int = 10) -> list[CityInfo]:
     """Search for cities using ngram autocomplete.
 
     Args:
         query: City name to search for.
-        engine: TantivySearch instance configured with city_index.
+        engine: TextSearchEngine instance.
         limit: Max results to return.
 
     Returns:
         List of CityInfo matching the query.
     """
-    return CitySearch(tantivy_engine=engine).search(query, limit)
+    return CitySearch(text_engine=engine).search(query, limit)
