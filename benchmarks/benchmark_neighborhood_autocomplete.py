@@ -11,7 +11,6 @@ from pathlib import Path
 from openaddrbr.data import TextSearchEngine
 from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
 
-
 SAMPLES_LIMIT = 10000  # Number of samples to test per case (10k for cache warming)
 
 # Shared engine instance

@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openaddrbr.data._sql_db import CityRecord, SQLDB as Database
+from openaddrbr.data._sql_db import SQLDB as Database
+from openaddrbr.data._sql_db import CityRecord
 
 
 class TestDatabase:

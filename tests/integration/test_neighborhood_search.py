@@ -1,5 +1,7 @@
 import pytest
+
 from openaddrbr import Geocoder, NeighborhoodInfo
+
 
 @pytest.fixture
 def geocoder():

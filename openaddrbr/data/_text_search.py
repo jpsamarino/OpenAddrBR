@@ -101,7 +101,7 @@ class TextSearchEngine:
             return []
 
         results = searcher.search(ngram_query, limit=limit)
-        return [SearchHit(score=s, doc_address=da) for s, da in results.hits]
+        return [SearchHit(*hit) for hit in results.hits]
 
     def get_city(self, doc_address: int) -> CityInfo | None:
         """Resolve a city document by address.
@@ -160,7 +160,7 @@ class TextSearchEngine:
 
         final_query = tantivy.Query.boolean_query(subqueries, 1)
         results = searcher.search(final_query, limit=limit)
-        return [SearchHit(score=s, doc_address=da) for s, da in results.hits]
+        return [SearchHit(*hit) for hit in results.hits]
 
     def get_neighborhood(self, doc_address: int) -> NeighborhoodInfo | None:
         """Resolve a neighborhood document by address.
