@@ -12,7 +12,7 @@ from openaddrbr.core.models import (
 )
 from openaddrbr.data import SQLDB
 from openaddrbr.data._tantivy import TantivySearch
-from openaddrbr.data._usearch import UsearchIndex
+from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services import (
     Encoder,
     build_result,
@@ -38,7 +38,7 @@ class Geocoder:
         batch_size: Default batch size for encoding. Defaults to OPENADDRBR_BATCH_SIZE or 16.
         encoder: Optional Encoder instance (for testing). If None, creates default.
         db: Optional SQLDB instance (for testing). If None, creates default.
-        usearch_index: Optional UsearchIndex instance (for testing). If None, creates default.
+        usearch_index: Optional VectorSearchEngine instance (for testing). If None, creates default.
     """
 
     def __init__(
@@ -48,7 +48,7 @@ class Geocoder:
         batch_size: int | None = None,
         encoder: Encoder | None = None,
         db: SQLDB | None = None,
-        usearch_index: UsearchIndex | None = None,
+        usearch_index: VectorSearchEngine | None = None,
         city_engine: TantivySearch | None = None,
         neighborhood_engine: TantivySearch | None = None,
     ):
@@ -56,7 +56,7 @@ class Geocoder:
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         )
         self.db = db if db is not None else SQLDB(data_path=data_path)
-        self.usearch_index = usearch_index if usearch_index is not None else UsearchIndex(data_path=data_path)
+        self.usearch_index = usearch_index if usearch_index is not None else VectorSearchEngine(data_path=data_path)
         self.city_engine = city_engine or TantivySearch("city_index", data_path=data_path)
         self.neighborhood_engine = neighborhood_engine or TantivySearch("neighborhood_index", data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()

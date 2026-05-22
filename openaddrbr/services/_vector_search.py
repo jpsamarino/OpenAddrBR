@@ -4,7 +4,7 @@ import numpy as np
 
 from openaddrbr.core.interfaces import GeocoderDB
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import UsearchIndex
+from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.utils import find_best_street_match
 
 
@@ -14,7 +14,7 @@ def search_by_embedding(
     street_norm: str,
     neighborhood_norm: str,
     db: GeocoderDB,
-    usearch_index: UsearchIndex | None = None,
+    usearch_index: VectorSearchEngine | None = None,
 ) -> StreetCluster | None:
     """Search by complete address using vector search + exact SQL.
 
@@ -24,7 +24,7 @@ def search_by_embedding(
         street_norm: Normalized street name.
         neighborhood_norm: Normalized neighborhood name.
         db: Database interface.
-        usearch_index: UsearchIndex instance. Required.
+        usearch_index: VectorSearchEngine instance. Required.
 
     Returns:
         Best matching StreetCluster or None.

@@ -14,7 +14,7 @@ import psutil
 
 from openaddrbr.data._sql_db import SQLDB as Database
 from openaddrbr.core._env import get_usearch_dir
-from openaddrbr.data._usearch import UsearchIndex
+from openaddrbr.data._vector_search import VectorSearchEngine
 
 
 def get_city_codes(limit=None):
@@ -66,7 +66,7 @@ def main():
     print()
 
     # Create instance
-    usearch_index = UsearchIndex()
+    usearch_index = VectorSearchEngine()
 
     # Test with different counts
     test_sizes = [10, 50, 100, 500, 1000]

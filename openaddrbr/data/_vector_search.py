@@ -1,4 +1,4 @@
-"""Usearch vector index — instance-based with configurable data path."""
+"""Vector search engine using usearch — instance-based with configurable data path."""
 
 from pathlib import Path
 
@@ -9,20 +9,20 @@ from usearch.index import Index as usearch_Index
 from openaddrbr.core._env import get_usearch_dir
 
 
-class UsearchIndex:
-    """Usearch index accessor with per-instance cache and configurable data path.
+class VectorSearchEngine:
+    """Vector search engine using usearch with per-instance cache.
 
     Args:
         data_path: Path to usearch directory. Defaults to env var or package default.
         cache_size: Max number of indices to keep in memory (LRU eviction).
 
     Example:
-        index = UsearchIndex()
-        results = index.search_city_streets(city_code=1100015, embedding=embedding)
+        engine = VectorSearchEngine()
+        results = engine.search_city_streets(city_code=1100015, embedding=embedding)
 
         # Or with custom path
-        index = UsearchIndex(data_path="/custom/path")
-        results = index.search_city_streets(city_code=1100015, embedding=embedding)
+        engine = VectorSearchEngine(data_path="/custom/path")
+        results = engine.search_city_streets(city_code=1100015, embedding=embedding)
     """
 
     def __init__(self, data_path: Path | None = None, cache_size: int = 256):
@@ -37,21 +37,17 @@ class UsearchIndex:
             self._data_path = data_path
         self._cache: LRUCache = LRUCache(maxsize=cache_size)
 
-    def get_city_street_index(self, city_code: int) -> "usearch_Index | None":
+    def get_city_street_index(self, city_code: int):
         """Load and cache the street index for a city.
 
         Args:
             city_code: IBGE city code.
 
         Returns:
-            The usearch Index for this city, or None if not found.
+            The usearch Index for this city.
         """
         if city_code in self._cache:
             return self._cache[city_code]
-
-        if usearch_Index is None:
-            self._cache[city_code] = None
-            return None
 
         index_path = self._data_path / f"{city_code}.usearch"
         if not index_path.exists():

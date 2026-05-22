@@ -11,12 +11,12 @@ from openaddrbr.core._env import (
 from openaddrbr.data._data_download import check_data_exists, download_data
 from openaddrbr.data._sql_db import SQLDB
 from openaddrbr.data._tantivy import TantivySearch
-from openaddrbr.data._usearch import UsearchIndex
+from openaddrbr.data._vector_search import VectorSearchEngine
 
 __all__ = [
     "SQLDB",
     "TantivySearch",
-    "UsearchIndex",
+    "VectorSearchEngine",
     "check_data_exists",
     "download_data",
     "get_data_path",

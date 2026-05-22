@@ -7,7 +7,7 @@ from openaddrbr.core._env import get_default_data_path
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import SQLDB as Database
 from openaddrbr.data._tantivy import TantivySearch
-from openaddrbr.data._usearch import UsearchIndex
+from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services._cep import (
     is_multi_street_cep as _is_multi_street_cep,
 )
@@ -38,7 +38,7 @@ class IBGEGeocoder:
         self._preload_model = preload_model
 
         self._db = Database(data_path=self._data_path)
-        self._usearch = UsearchIndex(data_path=self._data_path)
+        self._usearch = VectorSearchEngine(data_path=self._data_path)
         self._city_engine = TantivySearch("city_index", data_path=self._data_path)
         self._neighborhood_engine = TantivySearch(
             "neighborhood_index", data_path=self._data_path
