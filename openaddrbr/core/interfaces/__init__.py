@@ -1,13 +1,13 @@
 """Core interfaces package."""
 
 from openaddrbr.core.interfaces._protocols import (
+    AddressDataStore,
     BatchGeocoder,
     GeoCoder,
-    GeocoderDB,
 )
 
 __all__ = [
-    "GeocoderDB",
+    "AddressDataStore",
     "GeoCoder",
     "BatchGeocoder",
 ]

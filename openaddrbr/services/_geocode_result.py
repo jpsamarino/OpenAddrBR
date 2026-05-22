@@ -1,12 +1,12 @@
 """Address result building — constructs AddressInfo from StreetCluster."""
 
-from openaddrbr.core.interfaces import GeocoderDB
+from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import AddressInfo, CityCore, GeoLocation, StreetCluster
 from openaddrbr.utils import text_similarity
 
 
 def find_best_geo_location(
-    db: GeocoderDB, street_id: int, number: int, limit_numbers: int = 3
+    db: AddressDataStore, street_id: int, number: int, limit_numbers: int = 3
 ) -> GeoLocation | None:
     """Find best geo location for street_id and number with parity matching."""
     rows = db.query_geo_locations(street_id, number, limit_numbers)
@@ -47,7 +47,7 @@ def build_result(
     cep: str | None,
     number: int,
     city_info: CityCore,
-    db: GeocoderDB,
+    db: AddressDataStore,
 ) -> AddressInfo | None:
     """Build AddressInfo from street_cluster."""
     street_id = street_cluster.street_id

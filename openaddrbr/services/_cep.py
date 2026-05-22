@@ -1,11 +1,11 @@
 """CEP search service - search_by_cep implementation."""
 
-from openaddrbr.core.interfaces import GeocoderDB
+from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils import find_best_street_match
 
 
-def is_multi_street_cep(cep: str, db: GeocoderDB) -> bool:
+def is_multi_street_cep(cep: str, db: AddressDataStore) -> bool:
     """Check if CEP has multiple streets."""
     return db.is_multi_street_cep(cep)
 
@@ -14,7 +14,7 @@ def search_by_cep(
     zip_code: str,
     street_norm: str,
     neighborhood_norm: str,
-    db: GeocoderDB,
+    db: AddressDataStore,
     limit_qt_street: int = 10,
 ) -> StreetCluster | None:
     """Search for street_id by CEP."""

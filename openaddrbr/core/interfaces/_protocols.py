@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class GeocoderDB(Protocol):
-    """Protocol for geocoder SQLite database access."""
+class AddressDataStore(Protocol):
+    """Protocol for address SQLite database access."""
 
     def get_city_info_from_db(self, city_name: str, state_code: str) -> "CityRecord | None": ...
     def is_multi_street_cep(self, cep: str) -> bool: ...

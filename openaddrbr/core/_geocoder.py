@@ -10,7 +10,7 @@ from openaddrbr.core.models import (
     NeighborhoodInfo,
     NormalizedAddress,
 )
-from openaddrbr.data import SqlSearchEngine
+from openaddrbr.data import SqlAddressDataStore
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services import (
@@ -37,7 +37,7 @@ class Geocoder:
         data_path: Path to data directory. Defaults to OPENADDRBR_DATA_PATH or package default.
         batch_size: Default batch size for encoding. Defaults to OPENADDRBR_BATCH_SIZE or 16.
         encoder: Optional Encoder instance (for testing). If None, creates default.
-        db: Optional SqlSearchEngine instance (for testing). If None, creates default.
+        db: Optional SqlAddressDataStore instance (for testing). If None, creates default.
         usearch_index: Optional VectorSearchEngine instance (for testing). If None, creates default.
         text_engine: Optional TextSearchEngine instance (for testing). If None, creates default.
     """
@@ -48,14 +48,14 @@ class Geocoder:
         data_path: str | Path | None = None,
         batch_size: int | None = None,
         encoder: Encoder | None = None,
-        db: SqlSearchEngine | None = None,
+        db: SqlAddressDataStore | None = None,
         usearch_index: VectorSearchEngine | None = None,
         text_engine: TextSearchEngine | None = None,
     ):
         self.encoder = (
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         )
-        self.db = db if db is not None else SqlSearchEngine(data_path=data_path)
+        self.db = db if db is not None else SqlAddressDataStore(data_path=data_path)
         self.usearch_index = usearch_index if usearch_index is not None else VectorSearchEngine(data_path=data_path)
         self.text_engine = text_engine or TextSearchEngine(data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()

@@ -23,7 +23,7 @@ from benchmarks._db_ref_base import (
 )
 
 # APSW module-level
-from openaddrbr.data._sql_search import SqlSearchEngine as Database
+from openaddrbr.data._sql_address_data_store import SqlAddressDataStore as Database
 
 # Create a Database instance for APSW side
 _apsw_db = Database()

@@ -8,7 +8,7 @@ import apsw
 from cachetools import LRUCache
 
 from openaddrbr.core._env import get_default_data_path, get_sgeodb_path
-from openaddrbr.core.interfaces import GeocoderDB
+from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import (
     AddressRecord,
     CityRecord,
@@ -18,7 +18,7 @@ from openaddrbr.core.models import (
 from openaddrbr.utils import normalize_text
 
 
-class SqlSearchEngine(GeocoderDB):
+class SqlAddressDataStore(AddressDataStore):
     """Thread-safe database accessor with connection pooling and bounded caches.
 
     Args:

@@ -13,7 +13,7 @@ from pathlib import Path
 import psutil
 
 from openaddrbr.core._env import get_usearch_dir
-from openaddrbr.data._sql_search import SqlSearchEngine as Database
+from openaddrbr.data._sql_address_data_store import SqlAddressDataStore as Database
 from openaddrbr.data._vector_search import VectorSearchEngine
 
 
