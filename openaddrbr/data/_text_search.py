@@ -6,6 +6,8 @@ import tantivy
 from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 
 from openaddrbr.core._env import get_tantivy_dir
+from openaddrbr.core.models import CityInfo, NeighborhoodInfo, SearchHit
+from openaddrbr.utils import normalize_text
 
 
 class TextSearchEngine:
@@ -80,7 +82,7 @@ class TextSearchEngine:
 
         return tantivy.Query.boolean_query(subqueries, min_match)
 
-    def search_cities(self, query_text: str, limit: int = 10) -> list[tuple[float, int]]:
+    def search_cities(self, query_text: str, limit: int = 10) -> list[SearchHit]:
         """Search cities by normalized text.
 
         Args:
@@ -88,7 +90,7 @@ class TextSearchEngine:
             limit: Max results to return.
 
         Returns:
-            List of (score, doc_address) tuples.
+            List of SearchHit(score, doc_address).
         """
         index = self._get_city_index()
         searcher = index.searcher()
@@ -99,11 +101,38 @@ class TextSearchEngine:
             return []
 
         results = searcher.search(ngram_query, limit=limit)
-        return list(results.hits)
+        return [SearchHit(score=s, doc_address=da) for s, da in results.hits]
+
+    def get_city(self, doc_address: int) -> CityInfo | None:
+        """Resolve a city document by address.
+
+        Args:
+            doc_address: Tantivy doc address from search_cities result.
+
+        Returns:
+            CityInfo or None if not found.
+        """
+        index = self._get_city_index()
+        searcher = index.searcher()
+
+        try:
+            doc = searcher.doc(doc_address)
+        except KeyError:
+            return None
+
+        city_name = doc.get_first("city_name") or ""
+        return CityInfo(
+            city_code=doc.get_first("city_code"),
+            city_name=city_name,
+            city_normalized=normalize_text(city_name),
+            state_code=doc.get_first("state_code"),
+            latitude=doc.get_first("ref_latitude"),
+            longitude=doc.get_first("ref_longitude"),
+        )
 
     def search_neighborhoods(
         self, query_text: str, city_code: int, limit: int = 10
-    ) -> list[tuple[float, int]]:
+    ) -> list[SearchHit]:
         """Search neighborhoods by normalized text filtered by city code.
 
         Args:
@@ -112,7 +141,7 @@ class TextSearchEngine:
             limit: Max results to return.
 
         Returns:
-            List of (score, doc_address) tuples.
+            List of SearchHit(score, doc_address).
         """
         index = self._get_neighborhood_index()
         searcher = index.searcher()
@@ -131,4 +160,30 @@ class TextSearchEngine:
 
         final_query = tantivy.Query.boolean_query(subqueries, 1)
         results = searcher.search(final_query, limit=limit)
-        return list(results.hits)
+        return [SearchHit(score=s, doc_address=da) for s, da in results.hits]
+
+    def get_neighborhood(self, doc_address: int) -> NeighborhoodInfo | None:
+        """Resolve a neighborhood document by address.
+
+        Args:
+            doc_address: Tantivy doc address from search_neighborhoods result.
+
+        Returns:
+            NeighborhoodInfo or None if not found.
+        """
+        index = self._get_neighborhood_index()
+        searcher = index.searcher()
+
+        try:
+            doc = searcher.doc(doc_address)
+        except KeyError:
+            return None
+
+        neighborhood_name = doc.get_first("neighborhood_name") or ""
+        return NeighborhoodInfo(
+            neighborhood_name=neighborhood_name,
+            neighborhood_normalized=normalize_text(neighborhood_name),
+            city_code=doc.get_first("city_code"),
+            latitude=doc.get_first("ref_latitude"),
+            longitude=doc.get_first("ref_longitude"),
+        )

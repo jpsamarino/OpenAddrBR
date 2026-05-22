@@ -34,21 +34,11 @@ class NeighborhoodSearch:
         if not hits:
             return []
 
-        searcher = self._engine._get_neighborhood_index().searcher()
-
         neighborhoods = []
-        for score, doc_address in hits:
-            doc = searcher.doc(doc_address)
-            neighborhood_name = doc.get_first("neighborhood_name") or ""
-            neighborhoods.append(
-                NeighborhoodInfo(
-                    neighborhood_name=neighborhood_name,
-                    neighborhood_normalized=normalize_text(neighborhood_name),
-                    city_code=doc.get_first("city_code"),
-                    latitude=doc.get_first("ref_latitude"),
-                    longitude=doc.get_first("ref_longitude"),
-                )
-            )
+        for hit in hits:
+            neighborhood = self._engine.get_neighborhood(hit.doc_address)
+            if neighborhood is not None:
+                neighborhoods.append(neighborhood)
         return neighborhoods
 
 

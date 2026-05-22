@@ -33,24 +33,11 @@ class CitySearch:
         if not hits:
             return []
 
-        # Get searcher from the city_index
-        city_index = self._engine._get_city_index()
-        searcher = city_index.searcher()
-
         cities = []
-        for score, doc_address in hits:
-            doc = searcher.doc(doc_address)
-            city_name = doc.get_first("city_name") or ""
-            cities.append(
-                CityInfo(
-                    city_code=doc.get_first("city_code"),
-                    city_name=city_name,
-                    city_normalized=normalize_text(city_name),
-                    state_code=doc.get_first("state_code"),
-                    latitude=doc.get_first("ref_latitude"),
-                    longitude=doc.get_first("ref_longitude"),
-                )
-            )
+        for hit in hits:
+            city = self._engine.get_city(hit.doc_address)
+            if city is not None:
+                cities.append(city)
         return cities
 
 

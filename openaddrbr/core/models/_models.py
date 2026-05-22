@@ -4,6 +4,13 @@ from dataclasses import dataclass, field
 from typing import NamedTuple
 
 
+class SearchHit(NamedTuple):
+    """A search hit from TextSearchEngine — score and doc address."""
+
+    score: float
+    doc_address: int
+
+
 @dataclass(slots=True)
 class StreetCluster:
     """Group of address variations grouped by street_id for matching."""

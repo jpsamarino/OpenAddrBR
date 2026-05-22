@@ -14,6 +14,7 @@ from openaddrbr.core.models._models import (
     GeoLocation,
     NeighborhoodInfo,
     NormalizedAddress,
+    SearchHit,
     StreetCluster,
     StreetInfo,
 )
@@ -34,4 +35,5 @@ __all__ = [
     "GeoLocation",
     "NormalizedAddress",
     "AddressRequest",
+    "SearchHit",
 ]
