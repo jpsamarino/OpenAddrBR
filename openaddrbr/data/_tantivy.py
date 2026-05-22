@@ -59,7 +59,7 @@ class TantivySearch:
 
         return tantivy.Query.boolean_query(subqueries, min_match)
 
-    def search_text(self, query_text: str, limit: int = 10) -> list[tuple[float, int]]:
+    def search_cities(self, query_text: str, limit: int = 10) -> list[tuple[float, int]]:
         """Search cities by text only."""
         index = self._get_index()
         searcher = index.searcher()

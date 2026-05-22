@@ -17,7 +17,7 @@ class CitySearch:
         if not query_normalized:
             return []
 
-        hits = self._engine.search_text(query_normalized, limit=limit)
+        hits = self._engine.search_cities(query_normalized, limit=limit)
         if not hits:
             return []
 
