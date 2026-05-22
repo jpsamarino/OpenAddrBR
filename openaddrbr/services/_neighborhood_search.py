@@ -17,14 +17,13 @@ class NeighborhoodSearch:
         if not query_normalized:
             return []
 
-        hits = self._ts.search_raw(
+        hits = self._ts.search_text_by_city(
             query_normalized, "neighborhood_search", city_code=city_code, limit=limit
         )
         if not hits:
             return []
 
-        index = self._ts._get_index()
-        searcher = index.searcher()
+        searcher = self._ts.searcher()
 
         neighborhoods = []
         for score, doc_address in hits:
@@ -42,7 +41,12 @@ class NeighborhoodSearch:
         return neighborhoods
 
 
-# Backward compatibility function
-def search_neighborhood_tantivy(query: str, city_code: int, limit: int = 10) -> list[NeighborhoodInfo]:
+# Cached instance
+_neighborhood_search = NeighborhoodSearch()
+
+
+def search_neighborhood_tantivy(
+    query: str, city_code: int, limit: int = 10
+) -> list[NeighborhoodInfo]:
     """Search for neighborhoods by name within city (backward compat)."""
-    return NeighborhoodSearch().search(query, city_code, limit)
+    return _neighborhood_search.search(query, city_code, limit)

@@ -17,12 +17,11 @@ class CitySearch:
         if not query_normalized:
             return []
 
-        hits = self._ts.search_raw(query_normalized, "city_search", city_code=None, limit=limit)
+        hits = self._ts.search_text(query_normalized, "city_search", limit=limit)
         if not hits:
             return []
 
-        index = self._ts._get_index()
-        searcher = index.searcher()
+        searcher = self._ts.searcher()
 
         cities = []
         for score, doc_address in hits:

@@ -7,11 +7,7 @@ from openaddrbr.core._env import get_tantivy_dir
 
 
 class TantivySearch:
-    """Base class for tantivy text search with lazy index loading.
-
-    Subclasses should call _get_index() and use search_raw() for basic queries,
-    or extend _build_ngram_query() for custom query building.
-    """
+    """Base class for tantivy text search with lazy index loading."""
 
     _ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
 
@@ -28,6 +24,14 @@ class TantivySearch:
             self._index.register_tokenizer("ngram", self._ngram_analyzer)
         return self._index
 
+    def schema(self):
+        """Return the index schema."""
+        return self._get_index().schema
+
+    def searcher(self):
+        """Return a searcher for this index."""
+        return self._get_index().searcher()
+
     def _build_ngram_query(
         self,
         query_text: str,
@@ -35,17 +39,7 @@ class TantivySearch:
         schema,
         min_match: int | None = None,
     ) -> tantivy.Query | None:
-        """BooleanQuery with SHOULD (OR) per token.
-
-        Args:
-            query_text: Raw query text (should already be normalized)
-            field_name: Field name in tantivy schema to search
-            schema: Index schema
-            min_match: Minimum number of tokens that must match. If None, auto-calculated.
-
-        Returns:
-            Tantivy Query or None if query_text produces no tokens.
-        """
+        """BooleanQuery with SHOULD (OR) per token."""
         tokens = self._ngram_analyzer.analyze(query_text)
         if not tokens:
             return None
@@ -65,45 +59,37 @@ class TantivySearch:
 
         return tantivy.Query.boolean_query(subqueries, min_match)
 
-    def search_raw(
-        self,
-        query_text: str,
-        field_name: str,
-        city_code: int | None = None,
-        limit: int = 10,
-    ) -> list[tuple[float, int]]:
-        """Raw search returning (score, doc_address) tuples.
-
-        Args:
-            query_text: Normalized query text
-            field_name: Field name in tantivy schema
-            city_code: Optional city_code filter (adds Must clause)
-            limit: Max results
-
-        Returns:
-            List of (score, doc_address) tuples
-        """
+    def search_text(self, query_text: str, field_name: str, limit: int = 10) -> list[tuple[float, int]]:
+        """Search by text only (no city filter)."""
         index = self._get_index()
         searcher = index.searcher()
         schema = index.schema
-
-        subqueries: list[tuple[Occur, tantivy.Query]] = []
-
-        if city_code is not None:
-            subqueries.append(
-                (Occur.Must, tantivy.Query.term_query(schema, "city_code", city_code))
-            )
 
         ngram_query = self._build_ngram_query(query_text, field_name, schema)
         if ngram_query is None:
             return []
 
-        subqueries.append((Occur.Should, ngram_query))
-
-        # When no city_code filter: use Must(ngram_query) to require at least one match
-        # When city_code is set: use all subqueries (Must city_code + Should ngram_query)
-        final_query = tantivy.Query.boolean_query(
-            subqueries, 1,
-        )
+        final_query = tantivy.Query.boolean_query([(Occur.Must, ngram_query)], 1)
         results = searcher.search(final_query, limit=limit)
-        return [(float(score), doc_address) for score, doc_address in results.hits]
+        return list(results.hits)
+
+    def search_text_by_city(
+        self, query_text: str, field_name: str, city_code: int, limit: int = 10
+    ) -> list[tuple[float, int]]:
+        """Search by text filtered by city_code."""
+        index = self._get_index()
+        searcher = index.searcher()
+        schema = index.schema
+
+        ngram_query = self._build_ngram_query(query_text, field_name, schema)
+        if ngram_query is None:
+            return []
+
+        subqueries = [
+            (Occur.Must, tantivy.Query.term_query(schema, "city_code", city_code)),
+            (Occur.Should, ngram_query),
+        ]
+
+        final_query = tantivy.Query.boolean_query(subqueries, 1)
+        results = searcher.search(final_query, limit=limit)
+        return list(results.hits)
