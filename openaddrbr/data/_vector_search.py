@@ -6,7 +6,7 @@ import numpy as np
 from cachetools import LRUCache
 from usearch.index import Index as usearch_Index
 
-from openaddrbr.core._paths import get_usearch_dir
+from openaddrbr.core.env import get_usearch_dir
 
 
 class VectorSearchEngine:

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from openaddrbr.core._env import get_default_batch_size
+from openaddrbr.core.env import get_default_batch_size
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,

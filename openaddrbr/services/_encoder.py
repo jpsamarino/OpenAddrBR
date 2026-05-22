@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 
-from openaddrbr.core._paths import get_default_backend, get_default_batch_size, get_model_path
+from openaddrbr.core.env import get_default_backend, get_default_batch_size, get_model_path
 
 # Silence spurious tokenizer warnings
 for _logger_name in ["transformers", "sentence_transformers", "onnxruntime", "optimum"]:
