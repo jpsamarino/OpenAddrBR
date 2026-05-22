@@ -1,6 +1,7 @@
 """Usearch vector index — thread-safe with lazy initialization."""
 
 import numpy as np
+from cachetools import TTLCache
 from usearch.index import Index as usearch_Index
 
 from openaddrbr.core._env import get_usearch_dir
@@ -9,11 +10,11 @@ from openaddrbr.core._env import get_usearch_dir
 class UsearchIndex:
     """Thread-safe usearch index accessor with lazy initialization per city_code.
 
-    Indexes are cached after first load per city_code.
+    Indexes are cached after first load per city_code with TTL.
     Use clear_cache() for testing only.
     """
 
-    _cache: dict[int, "usearch_Index | None"] = {}
+    _cache: TTLCache = TTLCache(maxsize=256, ttl=3600)
 
     @classmethod
     def get(cls, city_code: int) -> "usearch_Index | None":
