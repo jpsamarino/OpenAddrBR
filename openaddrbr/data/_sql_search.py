@@ -18,7 +18,7 @@ from openaddrbr.core.models import (
 from openaddrbr.utils import normalize_text
 
 
-class SQLDB(GeocoderDB):
+class SqlSearchEngine(GeocoderDB):
     """Thread-safe database accessor with connection pooling and bounded caches.
 
     Args:

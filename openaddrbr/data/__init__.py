@@ -9,12 +9,12 @@ from openaddrbr.core._env import (
     set_data_path,
 )
 from openaddrbr.data._data_download import check_data_exists, download_data
-from openaddrbr.data._sql_db import SQLDB
+from openaddrbr.data._sql_search import SqlSearchEngine
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 
 __all__ = [
-    "SQLDB",
+    "SqlSearchEngine",
     "TextSearchEngine",
     "VectorSearchEngine",
     "check_data_exists",

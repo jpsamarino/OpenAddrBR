@@ -5,7 +5,7 @@ from pathlib import Path
 from openaddrbr import geocode as _geocode
 from openaddrbr.core._env import get_default_data_path
 from openaddrbr.core.models import StreetCluster
-from openaddrbr.data import SQLDB as Database
+from openaddrbr.data import SqlSearchEngine as Database
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services._cep import (

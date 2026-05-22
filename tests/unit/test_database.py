@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openaddrbr.data._sql_db import SQLDB as Database
-from openaddrbr.data._sql_db import CityRecord
+from openaddrbr.data._sql_search import CityRecord
+from openaddrbr.data._sql_search import SqlSearchEngine as Database
 
 
 class TestDatabase:
