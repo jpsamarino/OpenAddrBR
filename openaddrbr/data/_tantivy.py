@@ -69,9 +69,8 @@ class TantivySearch:
         if ngram_query is None:
             return []
 
-        final_query = tantivy.Query.boolean_query([(Occur.Must, ngram_query)], 1)
-        results = searcher.search(final_query, limit=limit)
-        return results.hits
+        results = searcher.search(ngram_query, limit=limit)
+        return list(results.hits)
 
     def search_neighborhoods(
         self, query_text: str, city_code: int, limit: int = 10
@@ -92,4 +91,4 @@ class TantivySearch:
 
         final_query = tantivy.Query.boolean_query(subqueries, 1)
         results = searcher.search(final_query, limit=limit)
-        return results.hits
+        return list(results.hits)
