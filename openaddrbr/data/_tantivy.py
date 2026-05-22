@@ -59,13 +59,13 @@ class TantivySearch:
 
         return tantivy.Query.boolean_query(subqueries, min_match)
 
-    def search_text(self, query_text: str, field_name: str, limit: int = 10) -> list[tuple[float, int]]:
-        """Search by text only (no city filter)."""
+    def search_text(self, query_text: str, limit: int = 10) -> list[tuple[float, int]]:
+        """Search cities by text only."""
         index = self._get_index()
         searcher = index.searcher()
         schema = index.schema
 
-        ngram_query = self._build_ngram_query(query_text, field_name, schema)
+        ngram_query = self._build_ngram_query(query_text, "city_search", schema)
         if ngram_query is None:
             return []
 
@@ -74,14 +74,14 @@ class TantivySearch:
         return list(results.hits)
 
     def search_neighborhoods(
-        self, query_text: str, field_name: str, city_code: int, limit: int = 10
+        self, query_text: str, city_code: int, limit: int = 10
     ) -> list[tuple[float, int]]:
-        """Search by text filtered by city_code."""
+        """Search neighborhoods by text filtered by city_code."""
         index = self._get_index()
         searcher = index.searcher()
         schema = index.schema
 
-        ngram_query = self._build_ngram_query(query_text, field_name, schema)
+        ngram_query = self._build_ngram_query(query_text, "neighborhood_search", schema)
         if ngram_query is None:
             return []
 

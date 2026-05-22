@@ -18,7 +18,7 @@ class NeighborhoodSearch:
             return []
 
         hits = self._engine.search_neighborhoods(
-            query_normalized, "neighborhood_search", city_code=city_code, limit=limit
+            query_normalized, city_code=city_code, limit=limit
         )
         if not hits:
             return []
