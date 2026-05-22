@@ -38,9 +38,9 @@ class TestCityService:
 class TestCEPService:
     """Tests for CEP service with DI."""
 
-    def test_search_by_cep_returns_cluster(self):
-        """search_by_cep should return StreetCluster when found."""
-        from openaddrbr.services._cep import search_by_cep
+    def test_resolve_street_by_cep_returns_cluster(self):
+        """resolve_street_by_cep should return StreetCluster when found."""
+        from openaddrbr.services._cep import resolve_street_by_cep
 
         mock_db = MagicMock()
         mock_db.query_address_by_cep.return_value = [
@@ -51,18 +51,18 @@ class TestCEPService:
             ),
         ]
 
-        result = search_by_cep("01310000", "AVENIDA PAULISTA", "BELA VISTA", db=mock_db)
+        result = resolve_street_by_cep("01310000", "AVENIDA PAULISTA", "BELA VISTA", db=mock_db)
         assert result is not None
         assert result.street_id == 1
 
-    def test_search_by_cep_returns_none_when_not_found(self):
-        """search_by_cep should return None when no match."""
-        from openaddrbr.services._cep import search_by_cep
+    def test_resolve_street_by_cep_returns_none_when_not_found(self):
+        """resolve_street_by_cep should return None when no match."""
+        from openaddrbr.services._cep import resolve_street_by_cep
 
         mock_db = MagicMock()
         mock_db.query_address_by_cep.return_value = []
 
-        result = search_by_cep("00000000", "AVENIDA PAULISTA", "BELA VISTA", db=mock_db)
+        result = resolve_street_by_cep("00000000", "AVENIDA PAULISTA", "BELA VISTA", db=mock_db)
         assert result is None
 
 

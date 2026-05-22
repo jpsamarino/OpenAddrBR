@@ -1,18 +1,18 @@
-"""CEP search service - search_by_cep implementation."""
+"""CEP search service - resolve_street_by_cep implementation."""
 
 from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils import find_best_street_match
 
 
-def search_by_cep(
+def resolve_street_by_cep(
     zip_code: str,
     street_norm: str,
     neighborhood_norm: str,
     db: AddressDataStore,
     limit_qt_street: int = 10,
 ) -> StreetCluster | None:
-    """Search for street_id by CEP."""
+    """Resolve street cluster by CEP and normalized street/neighborhood names."""
     rows = db.query_address_by_cep(zip_code, limit_qt_street)
     if not rows:
         return None

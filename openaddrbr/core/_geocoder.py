@@ -17,7 +17,7 @@ from openaddrbr.services import (
     Encoder,
     build_result,
     get_city_info,
-    search_by_cep,
+    resolve_street_by_cep,
     search_by_embedding,
     search_city_tantivy,
     search_neighborhood_tantivy,
@@ -95,7 +95,7 @@ class Geocoder:
         # 1. Try CEP search first (if not multi-street)
         street_cluster = None
         if clean_zip and not self.db.is_multi_street_cep(clean_zip):
-            street_cluster = search_by_cep(clean_zip, street_norm, neighborhood_norm, db=self.db)
+            street_cluster = resolve_street_by_cep(clean_zip, street_norm, neighborhood_norm, db=self.db)
 
         # 2. Fall back to vector search
         if not street_cluster:
@@ -185,7 +185,7 @@ class Geocoder:
                 cluster = None
 
                 if addr.zip_code and not self.db.is_multi_street_cep(addr.zip_code):
-                    cluster = search_by_cep(
+                    cluster = resolve_street_by_cep(
                         addr.zip_code, addr.street_norm, addr.neighborhood_norm, db=self.db
                     )
 
