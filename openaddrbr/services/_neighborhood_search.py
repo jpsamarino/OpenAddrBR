@@ -34,7 +34,7 @@ class NeighborhoodSearch:
         if not hits:
             return []
 
-        searcher = self._engine._get_index("neighborhood_index").searcher()
+        searcher = self._engine._get_neighborhood_index().searcher()
 
         neighborhoods = []
         for score, doc_address in hits:

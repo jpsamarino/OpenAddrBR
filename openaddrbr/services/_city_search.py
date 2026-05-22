@@ -34,8 +34,8 @@ class CitySearch:
             return []
 
         # Get searcher from the city_index
-        schema = self._engine._get_index("city_index").schema
-        searcher = self._engine._get_index("city_index").searcher()
+        city_index = self._engine._get_city_index()
+        searcher = city_index.searcher()
 
         cities = []
         for score, doc_address in hits:

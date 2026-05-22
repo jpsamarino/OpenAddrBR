@@ -23,22 +23,35 @@ class TextSearchEngine:
 
     def __init__(self, data_path: Path | None = None):
         self._data_path = data_path or get_tantivy_dir()
-        self._indices: dict[str, tantivy.Index] = {}
+        self._city_index: tantivy.Index | None = None
+        self._neighborhood_index: tantivy.Index | None = None
 
-    def _get_index(self, index_name: str) -> tantivy.Index:
-        """Lazy load index by name."""
-        if index_name not in self._indices:
-            base_path = self._data_path
-            tantivy_subpath = base_path / "tantivy"
-            if tantivy_subpath.exists():
-                index_path = tantivy_subpath / index_name
-            else:
-                index_path = base_path / index_name
+    def _resolve_path(self, index_name: str) -> Path:
+        """Resolve index path, checking for tantivy subfolder."""
+        base_path = self._data_path
+        tantivy_subpath = base_path / "tantivy"
+        if tantivy_subpath.exists():
+            return tantivy_subpath / index_name
+        return base_path / index_name
 
-            index = tantivy.Index.open(str(index_path))
-            index.register_tokenizer("ngram", self._ngram_analyzer)
-            self._indices[index_name] = index
-        return self._indices[index_name]
+    def _open_index(self, index_name: str) -> tantivy.Index:
+        """Open and configure a tantivy index."""
+        index_path = str(self._resolve_path(index_name))
+        index = tantivy.Index.open(index_path)
+        index.register_tokenizer("ngram", self._ngram_analyzer)
+        return index
+
+    def _get_city_index(self) -> tantivy.Index:
+        """Lazy load city index."""
+        if self._city_index is None:
+            self._city_index = self._open_index("city_index")
+        return self._city_index
+
+    def _get_neighborhood_index(self) -> tantivy.Index:
+        """Lazy load neighborhood index."""
+        if self._neighborhood_index is None:
+            self._neighborhood_index = self._open_index("neighborhood_index")
+        return self._neighborhood_index
 
     def _build_ngram_query(
         self,
@@ -77,7 +90,7 @@ class TextSearchEngine:
         Returns:
             List of (score, doc_address) tuples.
         """
-        index = self._get_index("city_index")
+        index = self._get_city_index()
         searcher = index.searcher()
         schema = index.schema
 
@@ -101,7 +114,7 @@ class TextSearchEngine:
         Returns:
             List of (score, doc_address) tuples.
         """
-        index = self._get_index("neighborhood_index")
+        index = self._get_neighborhood_index()
         searcher = index.searcher()
         schema = index.schema
 
