@@ -5,11 +5,6 @@ from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils import find_best_street_match
 
 
-def is_multi_street_cep(cep: str, db: AddressDataStore) -> bool:
-    """Check if CEP has multiple streets."""
-    return db.is_multi_street_cep(cep)
-
-
 def search_by_cep(
     zip_code: str,
     street_norm: str,
@@ -22,7 +17,7 @@ def search_by_cep(
     if not rows:
         return None
 
-    clusters = []
+    clusters:list[StreetCluster] = []
     last_street_id = None
     for row in rows:
         sid = row.street_id

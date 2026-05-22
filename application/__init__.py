@@ -9,9 +9,6 @@ from openaddrbr.data import SqlAddressDataStore as Database
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services._cep import (
-    is_multi_street_cep as _is_multi_street_cep,
-)
-from openaddrbr.services._cep import (
     search_by_cep as _search_by_cep,
 )
 from openaddrbr.services._city import get_city_info as _get_city_info
@@ -45,7 +42,7 @@ class IBGEGeocoder:
         return _get_city_info(city_name, state_code)
 
     def is_multi_street_cep(self, cep):
-        return _is_multi_street_cep(cep)
+        return self._db.is_multi_street_cep(cep)
 
     def search_by_cep(self, zip_code, street_norm, neighborhood_norm, limit_qt_street=10):
         return _search_by_cep(zip_code, street_norm, neighborhood_norm, limit_qt_street)

@@ -65,16 +65,6 @@ class TestCEPService:
         result = search_by_cep("00000000", "AVENIDA PAULISTA", "BELA VISTA", db=mock_db)
         assert result is None
 
-    def test_is_multi_street_cep(self):
-        """is_multi_street_cep should return True when CEP has multiple streets."""
-        from openaddrbr.services._cep import is_multi_street_cep
-
-        mock_db = MagicMock()
-        mock_db.is_multi_street_cep.return_value = True
-
-        result = is_multi_street_cep("99999999", db=mock_db)
-        assert result is True
-
 
 class TestGeocodeService:
     """Tests for Geocoder.geocode method."""
