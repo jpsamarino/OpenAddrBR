@@ -58,14 +58,16 @@ class IBGEGeocoder:
 
     def search_vector(self, embedding, city_code, limit=20):
         """Search for street by vector similarity using usearch."""
-        return search_by_embedding(
-            city_code=city_code,
-            embedding=embedding,
-            street_norm=None,
-            neighborhood_norm=None,
-            db=self._db,
-            usearch_index=self._usearch,
+        if embedding is None:
+            return []
+
+        query_ids = self._usearch.search_city_streets(
+            city_code=city_code, embedding=embedding, limit=limit
         )
+        if not query_ids:
+            return []
+
+        return self._db.query_street_query(query_ids)
 
     def get_geo_info_batch(self, addresses, batch_size=16):
         from openaddrbr import get_geo_info_batch as _batch

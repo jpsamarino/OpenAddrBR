@@ -11,6 +11,8 @@ from openaddrbr.core.models import (
     NormalizedAddress,
 )
 from openaddrbr.data import SQLDB
+from openaddrbr.data._tantivy import TantivySearch
+from openaddrbr.data._usearch import UsearchIndex
 from openaddrbr.services import (
     Encoder,
     build_result,
@@ -36,6 +38,7 @@ class Geocoder:
         batch_size: Default batch size for encoding. Defaults to OPENADDRBR_BATCH_SIZE or 16.
         encoder: Optional Encoder instance (for testing). If None, creates default.
         db: Optional SQLDB instance (for testing). If None, creates default.
+        usearch_index: Optional UsearchIndex instance (for testing). If None, creates default.
     """
 
     def __init__(
@@ -45,11 +48,17 @@ class Geocoder:
         batch_size: int | None = None,
         encoder: Encoder | None = None,
         db: SQLDB | None = None,
+        usearch_index: UsearchIndex | None = None,
+        city_engine: TantivySearch | None = None,
+        neighborhood_engine: TantivySearch | None = None,
     ):
         self.encoder = (
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         )
         self.db = db if db is not None else SQLDB(data_path=data_path)
+        self.usearch_index = usearch_index if usearch_index is not None else UsearchIndex(data_path=data_path)
+        self.city_engine = city_engine or TantivySearch("city_index", data_path=data_path)
+        self.neighborhood_engine = neighborhood_engine or TantivySearch("neighborhood_index", data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()
 
     def geocode(
@@ -95,7 +104,12 @@ class Geocoder:
             embedding = self.encoder.encode(street_norm)
             if embedding is not None:
                 street_cluster = search_by_embedding(
-                    city_info.city_code, embedding, street_norm, neighborhood_norm, db=self.db
+                    city_info.city_code,
+                    embedding,
+                    street_norm,
+                    neighborhood_norm,
+                    db=self.db,
+                    usearch_index=self.usearch_index,
                 )
 
         if street_cluster:
@@ -184,6 +198,7 @@ class Geocoder:
                         addr.street_norm,
                         addr.neighborhood_norm,
                         db=self.db,
+                        usearch_index=self.usearch_index,
                     )
 
                 if cluster:
@@ -210,7 +225,7 @@ class Geocoder:
         Returns:
             List of CityInfo objects with coordinates
         """
-        return search_city_tantivy(query, limit)
+        return search_city_tantivy(query, engine=self.city_engine, limit=limit)
 
     def search_neighborhood(
         self, query: str, city_code: int, limit: int = 10
@@ -225,4 +240,4 @@ class Geocoder:
         Returns:
             List of NeighborhoodInfo objects with coordinates
         """
-        return search_neighborhood_tantivy(query, city_code, limit)
+        return search_neighborhood_tantivy(query, city_code, engine=self.neighborhood_engine, limit=limit)

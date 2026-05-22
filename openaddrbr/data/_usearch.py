@@ -26,7 +26,15 @@ class UsearchIndex:
     """
 
     def __init__(self, data_path: Path | None = None, cache_size: int = 256):
-        self._data_path = data_path or get_usearch_dir()
+        if data_path is None:
+            # Default: use env function which already returns usearch_v2 path
+            self._data_path = get_usearch_dir()
+        elif (data_path / "usearch_v2").exists():
+            # If given dbs/ path, use the usearch_v2 subfolder
+            self._data_path = data_path / "usearch_v2"
+        else:
+            # Otherwise assume it's already the usearch_v2 folder or similar
+            self._data_path = data_path
         self._cache: LRUCache = LRUCache(maxsize=cache_size)
 
     def get_city_street_index(self, city_code: int) -> "usearch_Index | None":
