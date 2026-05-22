@@ -73,7 +73,7 @@ class TantivySearch:
         results = searcher.search(final_query, limit=limit)
         return list(results.hits)
 
-    def search_text_by_city(
+    def search_neighborhoods(
         self, query_text: str, field_name: str, city_code: int, limit: int = 10
     ) -> list[tuple[float, int]]:
         """Search by text filtered by city_code."""

@@ -8,8 +8,8 @@ from openaddrbr.utils import normalize_text
 class CitySearch:
     """City autocomplete using tantivy ngram index."""
 
-    def __init__(self, tantivy_search: TantivySearch | None = None):
-        self._ts = tantivy_search or TantivySearch("city_index")
+    def __init__(self, tantivy_engine: TantivySearch | None = None):
+        self._engine = tantivy_engine or TantivySearch("city_index")
 
     def search(self, query: str, limit: int = 10) -> list[CityInfo]:
         """Search for cities by name using ngram autocomplete."""
@@ -17,11 +17,11 @@ class CitySearch:
         if not query_normalized:
             return []
 
-        hits = self._ts.search_text(query_normalized, "city_search", limit=limit)
+        hits = self._engine.search_text(query_normalized, "city_search", limit=limit)
         if not hits:
             return []
 
-        searcher = self._ts.searcher()
+        searcher = self._engine.searcher()
 
         cities = []
         for score, doc_address in hits:
