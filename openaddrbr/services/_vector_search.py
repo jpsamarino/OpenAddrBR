@@ -35,7 +35,9 @@ def search_by_embedding(
     if usearch_index is None:
         raise ValueError("usearch_index is required")
 
-    query_ids = usearch_index.search(embedding, city_code, limit=20)
+    query_ids = usearch_index.search_city_streets(
+        city_code=city_code, embedding=embedding, limit=20
+    )
     if not query_ids:
         return None
 

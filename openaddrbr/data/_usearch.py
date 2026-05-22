@@ -14,23 +14,30 @@ class UsearchIndex:
 
     Args:
         data_path: Path to usearch directory. Defaults to env var or package default.
-        maxsize: Max number of indices to keep in memory (LRU eviction).
+        cache_size: Max number of indices to keep in memory (LRU eviction).
 
     Example:
         index = UsearchIndex()
-        results = index.search(embedding, city_code=1100015)
+        results = index.search_city_streets(city_code=1100015, embedding=embedding)
 
         # Or with custom path
         index = UsearchIndex(data_path="/custom/path")
-        results = index.search(embedding, city_code=1100015)
+        results = index.search_city_streets(city_code=1100015, embedding=embedding)
     """
 
-    def __init__(self, data_path: Path | None = None, maxsize: int = 256):
+    def __init__(self, data_path: Path | None = None, cache_size: int = 256):
         self._data_path = data_path or get_usearch_dir()
-        self._cache: LRUCache = LRUCache(maxsize=maxsize)
+        self._cache: LRUCache = LRUCache(maxsize=cache_size)
 
-    def get(self, city_code: int) -> "usearch_Index | None":
-        """Get cached usearch index for city_code. Creates once per city_code."""
+    def get_city_street_index(self, city_code: int) -> "usearch_Index | None":
+        """Load and cache the street index for a city.
+
+        Args:
+            city_code: IBGE city code.
+
+        Returns:
+            The usearch Index for this city, or None if not found.
+        """
         if city_code in self._cache:
             return self._cache[city_code]
 
@@ -47,15 +54,26 @@ class UsearchIndex:
         self._cache[city_code] = index
         return index
 
-    def search(self, embedding, city_code: int, limit: int = 20) -> list[int]:
-        """Search for query_ids by vector similarity."""
-        index = self.get(city_code)
+    def search_city_streets(
+        self, city_code: int, embedding, limit: int = 20
+    ) -> list[int]:
+        """Search for street query_ids by vector similarity within a city.
+
+        Args:
+            city_code: IBGE city code to search within.
+            embedding: Query embedding vector.
+            limit: Max number of results.
+
+        Returns:
+            List of street query_ids matching the embedding.
+        """
+        index = self.get_city_street_index(city_code)
         if index is None:
             return []
 
         results = index.search(embedding.astype(np.float32), count=limit)
         return [int(r.key) for r in results]
 
-    def clear_cache(self) -> None:
+    def clear(self) -> None:
         """Clear the index cache."""
         self._cache.clear()

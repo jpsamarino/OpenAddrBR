@@ -72,13 +72,13 @@ def main():
     test_sizes = [10, 50, 100, 500, 1000]
 
     for size in test_sizes:
-        usearch_index.clear_cache()
+        usearch_index.clear()
 
         mem_before = process.memory_info().rss / 1024 / 1024
         loaded = 0
 
         for code in codes[:size]:
-            usearch_index.get(code)
+            usearch_index.get_city_street_index(code)
             loaded += 1
 
         mem_after = process.memory_info().rss / 1024 / 1024
@@ -98,7 +98,7 @@ def main():
     mem_before = process.memory_info().rss / 1024 / 1024
 
     for code in codes:
-        usearch_index.get(code)
+        usearch_index.get_city_street_index(code)
 
     mem_after = process.memory_info().rss / 1024 / 1024
     delta = mem_after - mem_before
