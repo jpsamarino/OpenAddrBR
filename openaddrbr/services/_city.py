@@ -4,20 +4,14 @@ from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import CityCore
 
 
-def get_city_info(city: str, state: str, db: AddressDataStore | None = None) -> CityCore | None:
+def get_city_info(city: str, state: str, db: AddressDataStore) -> CityCore | None:
     """Get city info by name and state.
 
     Args:
         city: City name
         state: State code (e.g., "SP")
-        db: Database instance (optional for backward compat)
+        db: Database instance
     """
-    if db is None:
-        # Fallback for backward compat during transition
-        from openaddrbr.data import SqlAddressDataStore
-
-        db = SqlAddressDataStore()
-
     record = db.get_city_info_from_db(city, state)
     if not record:
         return None
