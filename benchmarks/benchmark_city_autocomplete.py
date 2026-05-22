@@ -7,7 +7,7 @@ import random
 import sqlite3
 import time
 
-from openaddrbr.core._env import get_sgeodb_path
+from openaddrbr.core._paths import get_sgeodb_path
 from openaddrbr.data import TextSearchEngine
 from openaddrbr.services._city_search import search_city_tantivy
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import tantivy
 from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 
-from openaddrbr.core._env import get_tantivy_dir
+from openaddrbr.core._paths import get_tantivy_dir
 from openaddrbr.core.models import CityInfo, NeighborhoodInfo, SearchHit
 from openaddrbr.utils import normalize_text
 

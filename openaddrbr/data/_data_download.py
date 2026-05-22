@@ -8,7 +8,7 @@ import zstandard as zstd
 from huggingface_hub import hf_hub_download
 from sentence_transformers import SentenceTransformer
 
-from openaddrbr.core._env import (
+from openaddrbr.core._paths import (
     ensure_data_path,
     get_default_data_path,
     get_model_path,

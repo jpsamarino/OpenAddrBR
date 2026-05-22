@@ -9,7 +9,8 @@ from pathlib import Path
 
 import torch
 
-from openaddrbr.data import check_data_exists, download_data, get_data_path
+from openaddrbr.core._paths import get_data_path
+from openaddrbr.data import check_data_exists, download_data
 from openaddrbr.services import VALID_BACKENDS, Encoder
 
 

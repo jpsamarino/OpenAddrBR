@@ -7,7 +7,7 @@ from pathlib import Path
 import apsw
 from cachetools import LRUCache
 
-from openaddrbr.core._env import get_default_data_path, get_sgeodb_path
+from openaddrbr.core._paths import get_default_data_path, get_sgeodb_path
 from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import (
     AddressRecord,

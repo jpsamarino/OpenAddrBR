@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from openaddrbr import geocode as _geocode
-from openaddrbr.core._env import get_default_data_path
+from openaddrbr.core._paths import get_default_data_path
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import SqlAddressDataStore as Database
 from openaddrbr.data._text_search import TextSearchEngine
