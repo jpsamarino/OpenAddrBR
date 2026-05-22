@@ -8,6 +8,7 @@ import sqlite3
 import time
 
 from openaddrbr.core._env import get_sgeodb_path
+from openaddrbr.data import TantivySearch
 from openaddrbr.services._city_search import search_city_tantivy
 
 
@@ -21,6 +22,10 @@ def get_test_samples(db_path, n=1000):
     samples = cursor.fetchall()
     conn.close()
     return samples
+
+
+# Shared engine instance
+_city_engine = TantivySearch("city_index")
 
 
 def mutate_query(city_normalized, mutation_type="random"):
@@ -89,7 +94,7 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results = search_city_tantivy(query, limit=10)
+                results = search_city_tantivy(query, engine=_city_engine, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time

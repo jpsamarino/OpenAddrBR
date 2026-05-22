@@ -6,13 +6,31 @@ from openaddrbr.utils import normalize_text
 
 
 class NeighborhoodSearch:
-    """Neighborhood autocomplete using Tantivy ngram index."""
+    """Neighborhood autocomplete using Tantivy ngram index.
 
-    def __init__(self, tantivy_engine: TantivySearch | None = None):
-        self._engine = tantivy_engine or TantivySearch("neighborhood_index")
+    Args:
+        tantivy_engine: TantivySearch instance. Must have data_path configured.
+
+    Example:
+        engine = TantivySearch("neighborhood_index", data_path="/path/to/data")
+        search = NeighborhoodSearch(tantivy_engine=engine)
+        results = search.search("CENTRO", city_code=1100015)
+    """
+
+    def __init__(self, tantivy_engine: TantivySearch):
+        self._engine = tantivy_engine
 
     def search(self, query: str, city_code: int, limit: int = 10) -> list[NeighborhoodInfo]:
-        """Search for neighborhoods by name within city."""
+        """Search for neighborhoods by name within city.
+
+        Args:
+            query: Neighborhood name to search for.
+            city_code: IBGE city code to filter by.
+            limit: Max results to return.
+
+        Returns:
+            List of NeighborhoodInfo matching the query.
+        """
         query_normalized = normalize_text(query)
         if not query_normalized:
             return []
@@ -41,12 +59,18 @@ class NeighborhoodSearch:
         return neighborhoods
 
 
-# Cached instance
-_neighborhood_search = NeighborhoodSearch()
-
-
 def search_neighborhood_tantivy(
-    query: str, city_code: int, limit: int = 10
+    query: str, city_code: int, engine: TantivySearch, limit: int = 10
 ) -> list[NeighborhoodInfo]:
-    """Search for neighborhoods by name within city (backward compat)."""
-    return _neighborhood_search.search(query, city_code, limit)
+    """Search for neighborhoods by name within city.
+
+    Args:
+        query: Neighborhood name to search for.
+        city_code: IBGE city code to filter by.
+        engine: TantivySearch instance configured with neighborhood_index.
+        limit: Max results to return.
+
+    Returns:
+        List of NeighborhoodInfo matching the query.
+    """
+    return NeighborhoodSearch(tantivy_engine=engine).search(query, city_code, limit)

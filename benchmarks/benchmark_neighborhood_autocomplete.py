@@ -8,11 +8,14 @@ import random
 import time
 from pathlib import Path
 
-from openaddrbr.core._env import get_tantivy_dir
+from openaddrbr.data import TantivySearch
 from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
 
 
 SAMPLES_LIMIT = 10000  # Number of samples to test per case (10k for cache warming)
+
+# Shared engine instance
+_neighborhood_engine = TantivySearch("neighborhood_index")
 
 
 def load_samples():
@@ -107,7 +110,7 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results = search_neighborhood_tantivy(query, city_code, limit=10)
+                results = search_neighborhood_tantivy(query, city_code, engine=_neighborhood_engine, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time

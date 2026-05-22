@@ -3,7 +3,7 @@ Memory benchmark for usearch index loading.
 Measures REAL RAM usage (RSS) using psutil.
 
 Usage:
-    python benchmarks/benchmark_memory.py
+    python benchmarks/benchmark_usearch_memory.py
 """
 
 import json
@@ -65,22 +65,25 @@ def main():
     print(f"Avg per index: {avg_size:.2f} MB")
     print()
 
+    # Create instance
+    usearch_index = UsearchIndex()
+
     # Test with different counts
     test_sizes = [10, 50, 100, 500, 1000]
 
     for size in test_sizes:
-        UsearchIndex.clear_cache()
+        usearch_index.clear_cache()
 
         mem_before = process.memory_info().rss / 1024 / 1024
         loaded = 0
 
         for code in codes[:size]:
-            UsearchIndex.get(code)
+            usearch_index.get(code)
             loaded += 1
 
         mem_after = process.memory_info().rss / 1024 / 1024
         delta = mem_after - mem_before
-        cache_size = len(UsearchIndex._cache)
+        cache_size = len(usearch_index._cache)
 
         print(f"  Load {loaded} indices:")
         print(f"    RAM before:   {mem_before:.1f} MB")
@@ -91,15 +94,15 @@ def main():
 
     # Load ALL
     print("  Load ALL (2449) indices:")
-    UsearchIndex.clear_cache()
+    usearch_index.clear_cache()
     mem_before = process.memory_info().rss / 1024 / 1024
 
     for code in codes:
-        UsearchIndex.get(code)
+        usearch_index.get(code)
 
     mem_after = process.memory_info().rss / 1024 / 1024
     delta = mem_after - mem_before
-    cache_size = len(UsearchIndex._cache)
+    cache_size = len(usearch_index._cache)
 
     print(f"    RAM before:   {mem_before:.1f} MB")
     print(f"    RAM after:    {mem_after:.1f} MB")

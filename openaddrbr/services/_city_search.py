@@ -6,13 +6,30 @@ from openaddrbr.utils import normalize_text
 
 
 class CitySearch:
-    """City autocomplete using tantivy ngram index."""
+    """City autocomplete using tantivy ngram index.
 
-    def __init__(self, tantivy_engine: TantivySearch | None = None):
-        self._engine = tantivy_engine or TantivySearch("city_index")
+    Args:
+        tantivy_engine: TantivySearch instance. Must have data_path configured.
+
+    Example:
+        engine = TantivySearch("city_index", data_path="/path/to/data")
+        search = CitySearch(tantivy_engine=engine)
+        results = search.search("ARACAJU")
+    """
+
+    def __init__(self, tantivy_engine: TantivySearch):
+        self._engine = tantivy_engine
 
     def search(self, query: str, limit: int = 10) -> list[CityInfo]:
-        """Search for cities by name using ngram autocomplete."""
+        """Search for cities by name using ngram autocomplete.
+
+        Args:
+            query: City name to search for.
+            limit: Max results to return.
+
+        Returns:
+            List of CityInfo matching the query.
+        """
         query_normalized = normalize_text(query)
         if not query_normalized:
             return []
@@ -40,10 +57,15 @@ class CitySearch:
         return cities
 
 
-# Cached instance — index opens once, reused across all calls
-_city_search = CitySearch()
+def search_city_tantivy(query: str, engine: TantivySearch, limit: int = 10) -> list[CityInfo]:
+    """Search for cities using ngram autocomplete.
 
+    Args:
+        query: City name to search for.
+        engine: TantivySearch instance configured with city_index.
+        limit: Max results to return.
 
-def search_city_tantivy(query: str, limit: int = 10) -> list[CityInfo]:
-    """Search for cities using ngram autocomplete (backward compat)."""
-    return _city_search.search(query, limit)
+    Returns:
+        List of CityInfo matching the query.
+    """
+    return CitySearch(tantivy_engine=engine).search(query, limit)

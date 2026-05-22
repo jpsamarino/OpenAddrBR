@@ -14,12 +14,28 @@ def search_by_embedding(
     street_norm: str,
     neighborhood_norm: str,
     db: GeocoderDB,
+    usearch_index: UsearchIndex | None = None,
 ) -> StreetCluster | None:
-    """Search by complete address using vector search + exact SQL."""
+    """Search by complete address using vector search + exact SQL.
+
+    Args:
+        city_code: IBGE city code.
+        embedding: Query embedding vector.
+        street_norm: Normalized street name.
+        neighborhood_norm: Normalized neighborhood name.
+        db: Database interface.
+        usearch_index: UsearchIndex instance. Required.
+
+    Returns:
+        Best matching StreetCluster or None.
+    """
     if embedding is None or street_norm is None:
         return None
 
-    query_ids = UsearchIndex.search(embedding, city_code, limit=20)
+    if usearch_index is None:
+        raise ValueError("usearch_index is required")
+
+    query_ids = usearch_index.search(embedding, city_code, limit=20)
     if not query_ids:
         return None
 
