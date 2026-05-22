@@ -80,7 +80,7 @@ class TantivySearch:
         searcher = index.searcher()
         schema = index.schema
 
-        ngram_query = self._build_ngram_query(query_text, "neighborhood_search", schema)
+        ngram_query = self._build_ngram_query(query_text, "neighborhood_search", schema, min_match=1)
         if ngram_query is None:
             return []
 
