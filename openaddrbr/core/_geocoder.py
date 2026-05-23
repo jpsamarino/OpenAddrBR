@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from openaddrbr.core.env import get_default_batch_size
-from openaddrbr.core.interfaces import AddressDataStore
+from openaddrbr.core.interfaces import AddressDataStore, VectorIndexSearcher
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
@@ -33,7 +33,7 @@ class Geocoder:
         batch_size: Default batch size for encoding. Defaults to OPENADDRBR_BATCH_SIZE or 16.
         encoder: Optional Encoder instance (for testing). If None, creates default.
         addr_store: Optional AddressDataStore instance. If None, creates default.
-        vector_index: Optional VectorSearchEngine instance. If None, creates default.
+        vector_index: Optional VectorIndexSearcher instance. If None, creates default.
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class Geocoder:
         batch_size: int | None = None,
         encoder: Encoder | None = None,
         addr_store: AddressDataStore | None = None,
-        vector_index: VectorSearchEngine | None = None,
+        vector_index: VectorIndexSearcher | None = None,
     ):
         self.encoder = (
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)

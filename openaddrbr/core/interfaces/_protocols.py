@@ -1,6 +1,8 @@
 """Protocol definitions for structural subtyping."""
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+import numpy as np
 
 from openaddrbr.core.models import (
     AddressInfo,
@@ -31,6 +33,19 @@ class AddressDataStore(Protocol):
     def query_geo_locations(
         self, street_id: int, number: int, limit: int = 3
     ) -> "list[GeoInfoRecord]": ...
+
+
+@runtime_checkable
+class VectorIndexSearcher(Protocol):
+    """Protocol for vector index search operations (usearch)."""
+
+    def search_city_streets(
+        self, city_code: int, embedding: np.ndarray, limit: int = 20
+    ) -> list[int]: ...
+
+    def get_city_street_index(self, city_code: int) -> Any | None: ...
+
+    def clear(self) -> None: ...
 
 
 @runtime_checkable

@@ -7,9 +7,10 @@ from cachetools import LRUCache
 from usearch.index import Index as usearch_Index
 
 from openaddrbr.core.env import get_usearch_dir
+from openaddrbr.core.interfaces import VectorIndexSearcher
 
 
-class VectorSearchEngine:
+class VectorSearchEngine(VectorIndexSearcher):
     """Vector search engine using usearch with per-instance cache.
 
     Args:
