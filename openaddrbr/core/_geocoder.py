@@ -19,8 +19,6 @@ from openaddrbr.services import (
     get_city_info,
     resolve_street_by_cep,
     search_by_embedding,
-    search_city_tantivy,
-    search_neighborhood_tantivy,
 )
 from openaddrbr.utils import normalize_text
 
@@ -223,8 +221,8 @@ class Geocoder:
         Returns:
             List of CityInfo objects with coordinates
         """
-        from openaddrbr.services._city_search import CitySearch
-        return CitySearch(self.text_engine).search(query, limit=limit)
+        from openaddrbr.services._suggestions import LocationSuggestions
+        return LocationSuggestions(self.text_engine).search_cities(query, limit=limit)
 
     def search_neighborhood(
         self, query: str, city_code: int, limit: int = 10
@@ -239,5 +237,5 @@ class Geocoder:
         Returns:
             List of NeighborhoodInfo objects with coordinates
         """
-        from openaddrbr.services._neighborhood_search import NeighborhoodSearch
-        return NeighborhoodSearch(self.text_engine).search(query, city_code, limit=limit)
+        from openaddrbr.services._suggestions import LocationSuggestions
+        return LocationSuggestions(self.text_engine).search_neighborhoods(query, city_code, limit=limit)

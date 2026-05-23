@@ -1,5 +1,5 @@
 """
-Benchmark for city autocomplete using our search_city_tantivy implementation.
+Benchmark for city autocomplete using LocationSuggestions.
 Tests performance and accuracy with various query patterns.
 """
 
@@ -8,8 +8,7 @@ import sqlite3
 import time
 
 from openaddrbr.core.env import get_sgeodb_path
-from openaddrbr.data import TextSearchEngine
-from openaddrbr.services._city_search import search_city_tantivy
+from openaddrbr.services._suggestions import LocationSuggestions
 
 
 def get_test_samples(db_path, n=1000):
@@ -24,8 +23,8 @@ def get_test_samples(db_path, n=1000):
     return samples
 
 
-# Shared engine instance
-_text_engine = TextSearchEngine()
+# Shared suggestions instance
+_suggestions = LocationSuggestions()
 
 
 def mutate_query(city_normalized, mutation_type="random"):
@@ -94,7 +93,7 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results = search_city_tantivy(query, engine=_text_engine, limit=10)
+                results = _suggestions.search_cities(query, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time

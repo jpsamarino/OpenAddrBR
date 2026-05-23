@@ -1,5 +1,5 @@
 """
-Benchmark for neighborhood autocomplete using our search_neighborhood_tantivy implementation.
+Benchmark for neighborhood autocomplete using LocationSuggestions.
 Tests performance and accuracy with various query patterns.
 """
 
@@ -8,13 +8,12 @@ import random
 import time
 from pathlib import Path
 
-from openaddrbr.data import TextSearchEngine
-from openaddrbr.services._neighborhood_search import search_neighborhood_tantivy
+from openaddrbr.services._suggestions import LocationSuggestions
 
 SAMPLES_LIMIT = 10000  # Number of samples to test per case (10k for cache warming)
 
-# Shared engine instance
-_text_engine = TextSearchEngine()
+# Shared suggestions instance
+_suggestions = LocationSuggestions()
 
 
 def load_samples():
@@ -109,7 +108,7 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results = search_neighborhood_tantivy(query, city_code, engine=_text_engine, limit=10)
+                results = _suggestions.search_neighborhoods(query, city_code, limit=10)
                 query_time = time.time() - start_time
 
                 total_time += query_time
