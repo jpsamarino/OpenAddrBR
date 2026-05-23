@@ -75,7 +75,7 @@ class TestGeocodeService:
 
         mock_encoder = MagicMock()
 
-        geocoder = Geocoder(encoder=mock_encoder, db=mock_db)
+        geocoder = Geocoder(encoder=mock_encoder, addr_store=mock_db)
         result = geocoder.geocode("Rua X", "Bairro", "Cidade Inexistente", "XX")
         assert result is None
 
@@ -108,7 +108,7 @@ class TestGeocodeService:
         mock_encoder = MagicMock()
         mock_encoder.encode.return_value = None  # Skip embedding search
 
-        geocoder = Geocoder(encoder=mock_encoder, db=mock_db)
+        geocoder = Geocoder(encoder=mock_encoder, addr_store=mock_db)
         result = geocoder.geocode("Rua X", "Centro", "São Paulo", "SP", number=100)
         # CEP path should work without hitting embedding search
         assert result is None  # No street match found in mock
@@ -130,7 +130,7 @@ class TestBatchService:
 
         mock_encoder = MagicMock()
 
-        geocoder = Geocoder(encoder=mock_encoder, db=mock_db)
+        geocoder = Geocoder(encoder=mock_encoder, addr_store=mock_db)
 
         addresses = [
             AddressRequest(city="São Paulo", state="SP", street="Rua X", neighborhood="Centro"),

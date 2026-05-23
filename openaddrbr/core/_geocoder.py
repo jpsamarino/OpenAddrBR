@@ -3,12 +3,13 @@
 from pathlib import Path
 
 from openaddrbr.core.env import get_default_batch_size
+from openaddrbr.core.interfaces import AddressDataStore
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
     NormalizedAddress,
 )
-from openaddrbr.data import SqlAddressDataStore
+from openaddrbr.data._sql_address_data_store import SqlAddressDataStore
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services import (
     Encoder,
@@ -31,9 +32,8 @@ class Geocoder:
         data_path: Path to data directory. Defaults to OPENADDRBR_DATA_PATH or package default.
         batch_size: Default batch size for encoding. Defaults to OPENADDRBR_BATCH_SIZE or 16.
         encoder: Optional Encoder instance (for testing). If None, creates default.
-        db: Optional SqlAddressDataStore instance (for testing). If None, creates default.
-        usearch_index: Optional VectorSearchEngine instance (for testing). If None, creates default.
-        text_engine: Optional TextSearchEngine instance (for testing). If None, creates default.
+        addr_store: Optional AddressDataStore instance. If None, creates default.
+        vector_index: Optional VectorSearchEngine instance. If None, creates default.
     """
 
     def __init__(
@@ -42,14 +42,14 @@ class Geocoder:
         data_path: str | Path | None = None,
         batch_size: int | None = None,
         encoder: Encoder | None = None,
-        db: SqlAddressDataStore | None = None,
-        usearch_index: VectorSearchEngine | None = None,
+        addr_store: AddressDataStore | None = None,
+        vector_index: VectorSearchEngine | None = None,
     ):
         self.encoder = (
             encoder if encoder is not None else Encoder(backend=backend, batch_size=batch_size)
         )
-        self.db = db if db is not None else SqlAddressDataStore(data_path=data_path)
-        self.usearch_index = usearch_index if usearch_index is not None else VectorSearchEngine(data_path=data_path)
+        self.addr_store = addr_store if addr_store is not None else SqlAddressDataStore(data_path=data_path)
+        self.vector_index = vector_index if vector_index is not None else VectorSearchEngine(data_path=data_path)
         self.batch_size = batch_size if batch_size is not None else get_default_batch_size()
 
     def geocode(
@@ -74,7 +74,7 @@ class Geocoder:
         Returns:
             AddressInfo or None if not found
         """
-        city_info = get_city_info(city, state, db=self.db)
+        city_info = get_city_info(city, state, db=self.addr_store)
         if not city_info:
             return None
 
@@ -87,8 +87,8 @@ class Geocoder:
 
         # 1. Try CEP search first (if not multi-street)
         street_cluster = None
-        if clean_zip and not self.db.is_multi_street_cep(clean_zip):
-            street_cluster = resolve_street_by_cep(clean_zip, street_norm, neighborhood_norm, db=self.db)
+        if clean_zip and not self.addr_store.is_multi_street_cep(clean_zip):
+            street_cluster = resolve_street_by_cep(clean_zip, street_norm, neighborhood_norm, db=self.addr_store)
 
         # 2. Fall back to vector search
         if not street_cluster:
@@ -99,8 +99,8 @@ class Geocoder:
                     embedding,
                     street_norm,
                     neighborhood_norm,
-                    db=self.db,
-                    usearch_index=self.usearch_index,
+                    db=self.addr_store,
+                    usearch_index=self.vector_index,
                 )
 
         if street_cluster:
@@ -112,7 +112,7 @@ class Geocoder:
                 clean_zip,
                 number,
                 city_info,
-                self.db,
+                self.addr_store,
             )
 
         return None
@@ -139,7 +139,7 @@ class Geocoder:
         # Normalize all addresses
         normalized: list[NormalizedAddress] = []
         for i, addr in enumerate(addresses):
-            city_info = get_city_info(addr.city, addr.state, db=self.db)
+            city_info = get_city_info(addr.city, addr.state, db=self.addr_store)
             if not city_info:
                 continue
             normalized.append(
@@ -177,9 +177,9 @@ class Geocoder:
             for addr, embedding in zip(batch, embeddings):
                 cluster = None
 
-                if addr.zip_code and not self.db.is_multi_street_cep(addr.zip_code):
+                if addr.zip_code and not self.addr_store.is_multi_street_cep(addr.zip_code):
                     cluster = resolve_street_by_cep(
-                        addr.zip_code, addr.street_norm, addr.neighborhood_norm, db=self.db
+                        addr.zip_code, addr.street_norm, addr.neighborhood_norm, db=self.addr_store
                     )
 
                 if not cluster and embedding is not None:
@@ -188,8 +188,8 @@ class Geocoder:
                         embedding,
                         addr.street_norm,
                         addr.neighborhood_norm,
-                        db=self.db,
-                        usearch_index=self.usearch_index,
+                        db=self.addr_store,
+                        usearch_index=self.vector_index,
                     )
 
                 if cluster:
@@ -201,7 +201,7 @@ class Geocoder:
                         addr.zip_code,
                         addr.number,
                         addr.city_info,
-                        self.db,
+                        self.addr_store,
                     )
 
         return results
