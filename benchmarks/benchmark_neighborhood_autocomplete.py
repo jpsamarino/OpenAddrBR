@@ -8,7 +8,7 @@ import random
 import time
 from pathlib import Path
 
-from openaddrbr.services._suggestions import LocationSuggestions
+from openaddrbr.core._suggestions import LocationSuggestions
 
 SAMPLES_LIMIT = 10000  # Number of samples to test per case (10k for cache warming)
 

@@ -7,7 +7,6 @@ from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
     CityInfo,
-    NeighborhoodInfo,
     NormalizedAddress,
 )
 from openaddrbr.data import SqlAddressDataStore
@@ -210,32 +209,3 @@ class Geocoder:
                     )
 
         return results
-
-    def search_city(self, query: str, limit: int = 10) -> list[CityInfo]:
-        """Search for cities by name using ngram autocomplete.
-
-        Args:
-            query: City name query (partial match supported)
-            limit: Maximum number of results
-
-        Returns:
-            List of CityInfo objects with coordinates
-        """
-        from openaddrbr.services._suggestions import LocationSuggestions
-        return LocationSuggestions(self.text_engine).search_cities(query, limit=limit)
-
-    def search_neighborhood(
-        self, query: str, city_code: int, limit: int = 10
-    ) -> list[NeighborhoodInfo]:
-        """Search for neighborhoods by name using ngram autocomplete.
-
-        Args:
-            query: Neighborhood name query (partial match supported)
-            city_code: IBGE city code to filter results
-            limit: Maximum number of results
-
-        Returns:
-            List of NeighborhoodInfo objects with coordinates
-        """
-        from openaddrbr.services._suggestions import LocationSuggestions
-        return LocationSuggestions(self.text_engine).search_neighborhoods(query, city_code, limit=limit)

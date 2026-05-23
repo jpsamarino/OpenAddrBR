@@ -8,7 +8,7 @@ import sqlite3
 import time
 
 from openaddrbr.core.env import get_sgeodb_path
-from openaddrbr.services._suggestions import LocationSuggestions
+from openaddrbr.core._suggestions import LocationSuggestions
 
 
 def get_test_samples(db_path, n=1000):
