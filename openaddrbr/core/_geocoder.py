@@ -6,7 +6,6 @@ from openaddrbr.core.env import get_default_batch_size
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
-    CityInfo,
     NormalizedAddress,
 )
 from openaddrbr.data import SqlAddressDataStore

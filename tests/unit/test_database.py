@@ -1,10 +1,8 @@
 """Tests for Database class."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
-from openaddrbr.data._sql_address_data_store import CityRecord
 from openaddrbr.data._sql_address_data_store import SqlAddressDataStore as Database
 
 

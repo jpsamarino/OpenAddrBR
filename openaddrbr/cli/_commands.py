@@ -121,10 +121,10 @@ def _main(args=None):
     )
 
     # info command
-    info_parser = subparsers.add_parser("info", help="Show data location and status")
+    subparsers.add_parser("info", help="Show data location and status")
 
     # setup command
-    setup_parser = subparsers.add_parser("setup", help="Setup and tune performance")
+    subparsers.add_parser("setup", help="Setup and tune performance")
 
     args = parser.parse_args(args)
 
@@ -216,7 +216,6 @@ def _main(args=None):
         else:
             best = max(all_results, key=lambda x: x["streets_per_sec"])
         best_backend = best["backend"]
-        best_batch = best["batch"]
 
         # Determine recommended backend (never recommend quantized)
         if cuda_available and best["backend"] == "cuda":

@@ -1,10 +1,9 @@
 """Tests for text utilities - TDD approach."""
 
-import pytest
 
 from openaddrbr.core.models import StreetCluster
 from openaddrbr.utils._matching import find_best_street_match, text_similarity
-from openaddrbr.utils._text import normalize_text, text_to_ascii
+from openaddrbr.utils._text import text_to_ascii
 
 
 class TestTextToAscii:

@@ -2,10 +2,9 @@
 
 from unittest.mock import MagicMock
 
-import pytest
 
 from openaddrbr.core._geocoder import Geocoder
-from openaddrbr.core.models import AddressRequest, CityCore, CityRecord
+from openaddrbr.core.models import AddressRequest, CityRecord
 
 
 class TestCityService:

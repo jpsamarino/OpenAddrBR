@@ -1,6 +1,5 @@
 """Tests for CLI - TDD approach."""
 
-from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 

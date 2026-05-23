@@ -4,7 +4,6 @@ Returns list of unique street_normalized names.
 """
 
 import numpy as np
-import pytest
 from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "sentence-transformers/paraphrase-xlm-r-multilingual-v1"

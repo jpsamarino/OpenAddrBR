@@ -1,6 +1,5 @@
 """Tests for Encoder class."""
 
-import numpy as np
 import pytest
 
 from openaddrbr.services._encoder import VALID_BACKENDS, Encoder

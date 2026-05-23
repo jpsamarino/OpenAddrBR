@@ -4,7 +4,6 @@ from pathlib import Path
 
 from openaddrbr import geocode as _geocode
 from openaddrbr.core.env import get_default_data_path
-from openaddrbr.core.models import StreetCluster
 from openaddrbr.data import SqlAddressDataStore as Database
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
@@ -12,7 +11,6 @@ from openaddrbr.services._cep import (
     resolve_street_by_cep as _resolve_street_by_cep,
 )
 from openaddrbr.services._city import get_city_info as _get_city_info
-from openaddrbr.services._vector_search import search_by_embedding
 
 
 class IBGEGeocoder:

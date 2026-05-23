@@ -116,7 +116,7 @@ def run_benchmark():
                         }
                     )
 
-            except Exception as e:
+            except Exception:
                 errors += 1
 
         avg_time = (total_time / queries_tested * 1000) if queries_tested > 0 else 0
