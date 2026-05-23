@@ -9,8 +9,7 @@ from openaddrbr.core.models import (
     AddressRequest,
     NormalizedAddress,
 )
-from openaddrbr.data._sql_address_data_store import SqlAddressDataStore
-from openaddrbr.data._vector_search import VectorSearchEngine
+from openaddrbr.data import SqlAddressDataStore, VectorSearchEngine
 from openaddrbr.services import (
     Encoder,
     build_result,
