@@ -7,6 +7,9 @@ import numpy as np
 from openaddrbr.core.models import (
     AddressInfo,
     AddressRequest,
+    CityInfo,
+    NeighborhoodInfo,
+    SearchHit,
 )
 
 if TYPE_CHECKING:
@@ -46,6 +49,18 @@ class VectorIndexSearcher(Protocol):
     def get_city_street_index(self, city_code: int) -> Any | None: ...
 
     def clear(self) -> None: ...
+
+
+@runtime_checkable
+class TextIndexSearcher(Protocol):
+    """Protocol for text index search operations (Tantivy)."""
+
+    def search_cities(self, query_text: str, limit: int = 10) -> list[SearchHit]: ...
+    def get_city(self, doc_address: int) -> CityInfo | None: ...
+    def search_neighborhoods(
+        self, query_text: str, city_code: int, limit: int = 10
+    ) -> list[SearchHit]: ...
+    def get_neighborhood(self, doc_address: int) -> NeighborhoodInfo | None: ...
 
 
 @runtime_checkable

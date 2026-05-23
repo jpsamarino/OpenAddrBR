@@ -6,11 +6,12 @@ import tantivy
 from tantivy import Occur, TextAnalyzerBuilder, Tokenizer
 
 from openaddrbr.core.env import get_tantivy_dir
+from openaddrbr.core.interfaces import TextIndexSearcher
 from openaddrbr.core.models import CityInfo, NeighborhoodInfo, SearchHit
 from openaddrbr.utils import normalize_text
 
 
-class TextSearchEngine:
+class TextSearchEngine(TextIndexSearcher):
     """Unified Tantivy text search engine for cities and neighborhoods.
 
     Loads indices lazily on first use and caches them internally.
