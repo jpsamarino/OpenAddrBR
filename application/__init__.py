@@ -5,7 +5,6 @@ from pathlib import Path
 from openaddrbr import geocode as _geocode
 from openaddrbr.core.env import get_default_data_path
 from openaddrbr.data import SqlAddressDataStore as Database
-from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services._cep import (
     resolve_street_by_cep as _resolve_street_by_cep,
@@ -34,7 +33,6 @@ class IBGEGeocoder:
 
         self._db = Database(data_path=self._data_path)
         self._usearch = VectorSearchEngine(data_path=self._data_path)
-        self._text_engine = TextSearchEngine(data_path=self._data_path)
 
     def get_city_info(self, city_name, state_code):
         return _get_city_info(city_name, state_code)
