@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-
 from openaddrbr.core._geocoder import Geocoder
 
 

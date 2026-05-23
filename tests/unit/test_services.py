@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock
 
-
 from openaddrbr.core._geocoder import Geocoder
 from openaddrbr.core.models import AddressRequest, CityRecord
 
