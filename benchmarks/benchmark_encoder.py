@@ -93,7 +93,7 @@ def benchmark_batch(
 
 def main():
     parser = argparse.ArgumentParser(description="Encoder benchmark")
-    parser.add_argument("--limit", type=int, default=4000, help="Max items to load (default: 4000)")
+    parser.add_argument("--limit", type=int, default=200, help="Max items to load (default: 4000)")
     args = parser.parse_args()
 
     data_dir = Path(__file__).parent

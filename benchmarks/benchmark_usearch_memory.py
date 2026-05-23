@@ -94,7 +94,7 @@ def main():
 
     # Load ALL
     print("  Load ALL (2449) indices:")
-    usearch_index.clear_cache()
+    usearch_index.clear()
     mem_before = process.memory_info().rss / 1024 / 1024
 
     for code in codes:

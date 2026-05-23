@@ -12,6 +12,7 @@ from io import StringIO
 from pathlib import Path
 
 from openaddrbr.data._sql_address_data_store import SqlAddressDataStore as Database
+from openaddrbr.data._vector_search import VectorSearchEngine
 from openaddrbr.services._encoder import Encoder
 from openaddrbr.services._vector_search import search_by_embedding
 from openaddrbr.utils import normalize_text
@@ -41,6 +42,7 @@ def load_addresses(path: Path, limit: int, city_filter: str | None = None) -> li
 def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
     db = Database()
     encoder = Encoder()
+    usearch_index = VectorSearchEngine()
 
     items = []
     for rec in addresses:
@@ -85,6 +87,7 @@ def run_benchmark(addresses: list[dict], batch_size: int = 32) -> dict:
             item["street_norm"],
             item["neighborhood_norm"],
             db=db,
+            usearch_index=usearch_index,
         )
         results.append(cluster is not None)
     search_elapsed = time.perf_counter() - search_start
