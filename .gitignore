@@ -100,3 +100,6 @@ worktrees/
 
 # Claude (session-specific, not for commit)
 .claude/
+
+# All dot-prefixed directories (cache, output, temp, etc.)
+.*/
