@@ -1,0 +1,16 @@
+Geocoder
+├── geocode -> ok
+├── geocode_batch -> ok
+├── geocode_city -> ?
+├── geocode_neighborhood -> ?
+├── reverse_geocode
+├── get_addresses_in_radius
+└── get_street_numbers      ← busca números (precisa só do DB)
+
+LocationSearch
+├── search_city -> ok
+├── search_neighborhood -> ok
+├── search_street
+├── autocomplete
+├── parse_address
+└── search_cep
