@@ -5,7 +5,7 @@ from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.utils import normalize_text
 
 
-class LocationSuggestions:
+class LocationSearch:
     """Fast autocomplete for Brazilian cities and neighborhoods.
 
     Args:

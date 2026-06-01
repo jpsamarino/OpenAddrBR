@@ -1,16 +1,16 @@
-"""Integration tests for neighborhood autocomplete via LocationSuggestions."""
+"""Integration tests for neighborhood autocomplete via LocationSearch."""
 
 import unicodedata
 
 import pytest
 
-from openaddrbr.core import LocationSuggestions
+from openaddrbr.core import LocationSearch
 from openaddrbr.core.models import NeighborhoodInfo
 
 
 @pytest.fixture
 def suggestions():
-    return LocationSuggestions()
+    return LocationSearch()
 
 
 def normalize_for_compare(text: str) -> str:

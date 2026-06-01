@@ -7,8 +7,8 @@ import random
 import sqlite3
 import time
 
+from openaddrbr.core._location_search import LocationSearch
 from openaddrbr.core.env import get_sgeodb_path
-from openaddrbr.core._suggestions import LocationSuggestions
 
 
 def get_test_samples(db_path, n=1000):
@@ -24,7 +24,7 @@ def get_test_samples(db_path, n=1000):
 
 
 # Shared suggestions instance
-_suggestions = LocationSuggestions()
+_suggestions = LocationSearch()
 
 
 def mutate_query(city_normalized, mutation_type="random"):
