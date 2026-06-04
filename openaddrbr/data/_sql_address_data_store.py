@@ -14,6 +14,7 @@ from openaddrbr.core.models import (
     CityRecord,
     FullAddressRecord,
     GeoInfoRecord,
+    StreetInfo,
 )
 from openaddrbr.utils import normalize_text
 
@@ -155,3 +156,41 @@ class SqlAddressDataStore(AddressDataStore):
             (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
         )
         return [r[0] for r in cursor.fetchall()]
+
+    def query_streets_by_ids(self, street_ids: list[int]) -> list[StreetInfo]:
+        """Bulk lookup for street info by street_ids.
+
+        Uses SQL WHERE street_id IN (...) for efficiency.
+        Returns one StreetInfo per unique street_id.
+        """
+        if not street_ids:
+            return []
+
+        cursor = self._get_cursor()
+        placeholders = ", ".join("?" * len(street_ids))
+
+        cursor.execute(
+            f"""SELECT street_id, street_name, street_normalized,
+                       neighborhood_name, neighborhood_normalized,
+                       GROUP_CONCAT(zip_code) as zip_codes
+                FROM address
+                WHERE street_id IN ({placeholders})
+                GROUP BY street_id
+                ORDER BY MIN(qt_refs) DESC""",
+            street_ids,
+        )
+
+        results = []
+        for row in cursor.fetchall():
+            street_id = row[0]
+            zip_codes = row[5].split(",") if row[5] else []
+
+            results.append(StreetInfo(
+                street_id=street_id,
+                street_name=row[1],
+                street_normalized=row[2],
+                city_code=street_id,
+                zip_codes=list(set(zip_codes)),
+            ))
+
+        return results

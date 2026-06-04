@@ -55,6 +55,7 @@ class NeighborhoodInfo:
 class StreetInfo:
     """Street information (search output)."""
 
+    street_id: int
     street_name: str
     street_normalized: str
     city_code: int
