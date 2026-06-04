@@ -99,7 +99,7 @@ class LocationSearch:
             return []
 
         # Parse all street_ids from hits
-        all_street_ids = []
+        all_street_ids: set[int] = set()
         hit_data = []  # (score, street_ids_str, neighborhood_code)
         for hit in hits:
             street_doc = self._engine.get_street(hit.doc_address)
@@ -107,14 +107,14 @@ class LocationSearch:
                 street_ids_str = street_doc.get("street_ids", "")
                 if street_ids_str:
                     sid_list = [int(s) for s in street_ids_str.split(",") if s.isdigit()]
-                    all_street_ids.extend(sid_list)
+                    all_street_ids.update(sid_list)
                     hit_data.append((hit.score, street_ids_str, street_doc.get("neighborhood_code")))
 
         if not all_street_ids:
             return []
 
         # Dedupe street_ids
-        unique_street_ids = list(dict.fromkeys(all_street_ids))
+        unique_street_ids = list(all_street_ids)
 
         # Bulk lookup from DB
         street_infos = self._addr_store.query_streets_by_ids(unique_street_ids)
