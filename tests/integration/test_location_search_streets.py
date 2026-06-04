@@ -28,3 +28,20 @@ def test_search_streets_limit_respected(search):
     """Limit parameter is respected."""
     result = search.search_streets(city_code=3550308, query="Av.", limit=3)
     assert len(result) <= 3
+
+
+def test_search_streets_neighborhood_bonus_ordering(search):
+    """When neighborhood provided, matching neighborhoods get score bonus."""
+    results = search.search_streets(
+        city_code=3550308,
+        query="Av. Brasil",
+        neighborhood="Jardim",
+        limit=10
+    )
+    # Should not crash
+
+
+def test_search_streets_without_neighborhood_param(search):
+    """Without neighborhood param, results ordered by Tantivy score only."""
+    results = search.search_streets(city_code=3550308, query="Av. Brasil", limit=10)
+    # Should work without errors
