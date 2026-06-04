@@ -28,6 +28,7 @@ class TextSearchEngine(TextIndexSearcher):
         self._data_path = data_path or get_tantivy_dir()
         self._city_index: tantivy.Index | None = None
         self._neighborhood_index: tantivy.Index | None = None
+        self._street_index: tantivy.Index | None = None
 
     def _resolve_path(self, index_name: str) -> Path:
         """Resolve index path, checking for tantivy subfolder."""
@@ -55,6 +56,12 @@ class TextSearchEngine(TextIndexSearcher):
         if self._neighborhood_index is None:
             self._neighborhood_index = self._open_index("neighborhood_index")
         return self._neighborhood_index
+
+    def _get_street_index(self) -> tantivy.Index:
+        """Lazy load street index."""
+        if self._street_index is None:
+            self._street_index = self._open_index("city_street_index")
+        return self._street_index
 
     def _build_ngram_query(
         self,
@@ -178,3 +185,57 @@ class TextSearchEngine(TextIndexSearcher):
             latitude=doc.get_first("ref_latitude"),
             longitude=doc.get_first("ref_longitude"),
         )
+
+    def search_streets(
+        self, query_text: str, city_code: int, limit: int = 10
+    ) -> list[SearchHit]:
+        """Search streets by normalized text with city_code filter.
+
+        Args:
+            query_text: Normalized street name text.
+            city_code: IBGE city code to filter by.
+            limit: Max results to return.
+
+        Returns:
+            List of SearchHit(score, doc_address).
+        """
+        index = self._get_street_index()
+        searcher = index.searcher()
+        schema = index.schema
+
+        ngram_query = self._build_ngram_query(
+            query_text, "street_search", schema
+        )
+        if ngram_query is None:
+            return []
+
+        subqueries = [
+            (Occur.Must, tantivy.Query.term_query(schema, "city_code", city_code)),
+            (Occur.Should, ngram_query),
+        ]
+
+        final_query = tantivy.Query.boolean_query(subqueries, 1)
+        results = searcher.search(final_query, limit=limit)
+        return [SearchHit(*hit) for hit in results.hits]
+
+    def get_street(self, doc_address: int) -> dict | None:
+        """Get raw street data from document.
+
+        Args:
+            doc_address: Tantivy doc address from search_streets result.
+
+        Returns:
+            Dict with street_ids (str), neighborhood_code, or None.
+        """
+        index = self._get_street_index()
+        searcher = index.searcher()
+
+        try:
+            doc = searcher.doc(doc_address)
+        except KeyError:
+            return None
+
+        return {
+            "street_ids": doc.get_first("street_ids") or "",
+            "neighborhood_code": doc.get_first("neighborhood_code"),
+        }
