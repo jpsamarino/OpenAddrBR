@@ -61,7 +61,6 @@ class TextSearchEngine(TextIndexSearcher):
         query_text: str,
         field_name: str,
         schema,
-        min_match: int | None = None,
     ) -> tantivy.Query | None:
         """BooleanQuery with SHOULD (OR) per token."""
         tokens = self._ngram_analyzer.analyze(query_text)
@@ -72,16 +71,7 @@ class TextSearchEngine(TextIndexSearcher):
             (Occur.Should, tantivy.Query.term_query(schema, field_name, t)) for t in tokens
         ]
 
-        if min_match is None:
-            n = len(tokens)
-            if n <= 3:
-                min_match = 1
-            elif n <= 8:
-                min_match = n // 2
-            else:
-                min_match = n // 3 * 2
-
-        return tantivy.Query.boolean_query(subqueries, min_match)
+        return tantivy.Query.boolean_query(subqueries, minimum_number_should_match=1)
 
     def search_cities(self, query_text: str, limit: int = 10) -> list[SearchHit]:
         """Search cities by normalized text.
@@ -149,7 +139,7 @@ class TextSearchEngine(TextIndexSearcher):
         schema = index.schema
 
         ngram_query = self._build_ngram_query(
-            query_text, "neighborhood_search", schema, min_match=1
+            query_text, "neighborhood_search", schema
         )
         if ngram_query is None:
             return []
