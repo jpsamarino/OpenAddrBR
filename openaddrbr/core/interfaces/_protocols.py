@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 import numpy as np
 
 from openaddrbr.core.models import (
+    StreetInfo,
     AddressInfo,
     AddressRequest,
     CityInfo,
@@ -36,6 +37,7 @@ class AddressDataStore(Protocol):
     def query_geo_locations(
         self, street_id: int, number: int, limit: int = 3
     ) -> "list[GeoInfoRecord]": ...
+    def query_streets_by_ids(self, street_ids: list[int]) -> list[StreetInfo]: ...
 
 
 @runtime_checkable

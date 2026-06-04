@@ -30,3 +30,14 @@ class GeoInfoRecord(NamedTuple):
     longitude: float
     address_number: int
     address_id: int
+
+
+class StreetRecord(NamedTuple):
+    """Street data returned by bulk lookup."""
+
+    street_id: int
+    street_name: str
+    street_normalized: str
+    neighborhood_name: str
+    neighborhood_normalized: str
+    zip_codes: list[str]
