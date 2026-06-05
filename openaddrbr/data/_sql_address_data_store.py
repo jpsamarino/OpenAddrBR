@@ -188,6 +188,8 @@ class SqlAddressDataStore(AddressDataStore):
                     street_normalized=row[2],
                     city_code=row[0],
                     zip_codes=[row[5]] if row[5] else [],
+                    neighborhood_name=row[3] if row[3] else None,
+                    neighborhood_normalized=row[4] if row[4] else None,
                 )
             )
 

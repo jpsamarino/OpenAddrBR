@@ -60,6 +60,8 @@ class StreetInfo:
     street_normalized: str
     city_code: int
     zip_codes: list[str]
+    neighborhood_name: str | None = None
+    neighborhood_normalized: str | None = None
 
 
 @dataclass
