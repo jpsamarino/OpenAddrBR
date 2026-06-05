@@ -1,16 +1,16 @@
 """Protocol definitions for structural subtyping."""
 
-from typing import TYPE_CHECKING, Iterable, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Iterable, Protocol, runtime_checkable
 
 import numpy as np
 
 from openaddrbr.core.models import (
-    StreetInfo,
     AddressInfo,
     AddressRequest,
     CityInfo,
     NeighborhoodInfo,
     SearchHit,
+    StreetInfo,
 )
 
 if TYPE_CHECKING:
@@ -30,9 +30,9 @@ class AddressDataStore(Protocol):
     def is_multi_street_cep(self, cep: str) -> bool: ...
     def query_address_by_cep(self, zip_code: str, limit: int = 10) -> "list[AddressRecord]": ...
     def query_address_by_street_names(
-        self, street_names: list[str], city_code: int
+        self, street_names: Iterable[str], city_code: int
     ) -> "list[AddressRecord]": ...
-    def query_street_query(self, query_ids: list[int]) -> list[str]: ...
+    def query_street_query(self, query_ids: Iterable[int]) -> list[str]: ...
     def query_full_address_by_street_id(self, street_id: int) -> "list[FullAddressRecord]": ...
     def query_geo_locations(
         self, street_id: int, number: int, limit: int = 3

@@ -1,8 +1,8 @@
 """Location autocomplete using TextSearchEngine."""
 
 from openaddrbr.core.models import CityInfo, NeighborhoodInfo, StreetInfo
-from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.data import SqlAddressDataStore
+from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.utils import normalize_text
 
 
@@ -13,7 +13,11 @@ class LocationSearch:
         text_engine: TextSearchEngine instance. Creates one if not provided.
     """
 
-    def __init__(self, text_engine: TextSearchEngine | None = None, addr_store: SqlAddressDataStore | None = None):
+    def __init__(
+        self,
+        text_engine: TextSearchEngine | None = None,
+        addr_store: SqlAddressDataStore | None = None,
+    ):
         self._engine = text_engine or TextSearchEngine()
         self._addr_store = addr_store or SqlAddressDataStore()
 
@@ -59,9 +63,7 @@ class LocationSearch:
         if not query_normalized:
             return []
 
-        hits = self._engine.search_neighborhoods(
-            query_normalized, city_code=city_code, limit=limit
-        )
+        hits = self._engine.search_neighborhoods(query_normalized, city_code=city_code, limit=limit)
         if not hits:
             return []
 
@@ -108,13 +110,12 @@ class LocationSearch:
                 if street_ids_str:
                     sid_list = [int(s) for s in street_ids_str.split(",") if s.isdigit()]
                     all_street_ids.update(sid_list)
-                    hit_data.append((hit.score, street_ids_str, street_doc.get("neighborhood_code")))
+                    hit_data.append(
+                        (hit.score, street_ids_str, street_doc.get("neighborhood_code"))
+                    )
 
         if not all_street_ids:
             return []
-
-        # Dedupe street_ids
-        
 
         # Bulk lookup from DB
         street_infos = self._addr_store.query_streets_by_ids(all_street_ids)

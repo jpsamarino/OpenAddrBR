@@ -1,9 +1,9 @@
 """SQLite database — thread-safe connection pool with bounded LRU caches."""
 
 import array
-from typing import Iterable
 import threading
 from pathlib import Path
+from typing import Iterable
 
 import apsw
 from cachetools import LRUCache
@@ -109,7 +109,7 @@ class SqlAddressDataStore(AddressDataStore):
         return [AddressRecord(*r) for r in cursor.fetchall()]
 
     def query_address_by_street_names(
-        self, street_names: list[str], city_code: int
+        self, street_names: Iterable[str], city_code: int
     ) -> list[AddressRecord]:
         if not street_names:
             return []
@@ -147,7 +147,7 @@ class SqlAddressDataStore(AddressDataStore):
         )
         return [GeoInfoRecord(*r) for r in cursor.fetchall()]
 
-    def query_street_query(self, query_ids: list[int]) -> list[str]:
+    def query_street_query(self, query_ids: Iterable[int]) -> list[str]:
         if not query_ids:
             return []
         cursor = self._get_cursor()

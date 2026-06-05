@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock
 
-
 from openaddrbr.data._sql_address_data_store import SqlAddressDataStore as Database
 
 
