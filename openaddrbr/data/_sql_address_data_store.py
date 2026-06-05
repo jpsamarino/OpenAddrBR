@@ -160,24 +160,23 @@ class SqlAddressDataStore(AddressDataStore):
     def query_streets_by_ids(self, street_ids: list[int]) -> list[StreetInfo]:
         """Bulk lookup for street info by street_ids.
 
-        Uses SQL WHERE street_id IN (...) for efficiency.
+        Uses apsw.carray for efficient IN clause without placeholder expansion.
         Returns one StreetInfo per unique street_id.
         """
         if not street_ids:
             return []
 
         cursor = self._get_cursor()
-        placeholders = ", ".join("?" * len(street_ids))
-
+        q_arr = array.array("q", street_ids)
         cursor.execute(
-            f"""SELECT street_id, street_name, street_normalized,
+            """SELECT street_id, street_name, street_normalized,
                        neighborhood_name, neighborhood_normalized,
                        GROUP_CONCAT(zip_code) as zip_codes
                 FROM address
-                WHERE street_id IN ({placeholders})
+                WHERE street_id IN carray(?)
                 GROUP BY street_id
                 ORDER BY MIN(qt_refs) DESC""",
-            street_ids,
+            (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
         )
 
         results = []
@@ -185,12 +184,14 @@ class SqlAddressDataStore(AddressDataStore):
             street_id = row[0]
             zip_codes = row[5].split(",") if row[5] else []
 
-            results.append(StreetInfo(
-                street_id=street_id,
-                street_name=row[1],
-                street_normalized=row[2],
-                city_code=street_id,
-                zip_codes=list(set(zip_codes)),
-            ))
+            results.append(
+                StreetInfo(
+                    street_id=street_id,
+                    street_name=row[1],
+                    street_normalized=row[2],
+                    city_code=street_id,
+                    zip_codes=list(set(zip_codes)),
+                )
+            )
 
         return results
