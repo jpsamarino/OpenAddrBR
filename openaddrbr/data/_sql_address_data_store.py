@@ -1,6 +1,7 @@
 """SQLite database — thread-safe connection pool with bounded LRU caches."""
 
 import array
+from typing import Iterable
 import threading
 from pathlib import Path
 
@@ -157,7 +158,7 @@ class SqlAddressDataStore(AddressDataStore):
         )
         return [r[0] for r in cursor.fetchall()]
 
-    def query_streets_by_ids(self, street_ids: list[int]) -> list[StreetInfo]:
+    def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetInfo]:
         """Bulk lookup for street info by street_ids.
 
         Uses apsw.carray for efficient IN clause without placeholder expansion.
