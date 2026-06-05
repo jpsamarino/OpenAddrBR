@@ -114,10 +114,10 @@ class LocationSearch:
             return []
 
         # Dedupe street_ids
-        unique_street_ids = list(all_street_ids)
+        
 
         # Bulk lookup from DB
-        street_infos = self._addr_store.query_streets_by_ids(unique_street_ids)
+        street_infos = self._addr_store.query_streets_by_ids(all_street_ids)
         if not street_infos:
             return []
 
