@@ -161,36 +161,32 @@ class SqlAddressDataStore(AddressDataStore):
         """Bulk lookup for street info by street_ids.
 
         Uses apsw.carray for efficient IN clause without placeholder expansion.
-        Returns one StreetInfo per unique street_id.
+        Returns all rows (may have duplicates street_id with different names).
         """
         if not street_ids:
             return []
 
         cursor = self._get_cursor()
-        q_arr = array.array("q", street_ids)
+        q_arr = array.array('q', street_ids)
         cursor.execute(
             """SELECT street_id, street_name, street_normalized,
                        neighborhood_name, neighborhood_normalized,
-                       GROUP_CONCAT(zip_code) as zip_codes
+                       zip_code
                 FROM address
                 WHERE street_id IN carray(?)
-                GROUP BY street_id
-                ORDER BY MIN(qt_refs) DESC""",
+                ORDER BY qt_refs DESC""",
             (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
         )
 
         results = []
         for row in cursor.fetchall():
-            street_id = row[0]
-            zip_codes = row[5].split(",") if row[5] else []
-
             results.append(
                 StreetInfo(
-                    street_id=street_id,
+                    street_id=row[0],
                     street_name=row[1],
                     street_normalized=row[2],
-                    city_code=street_id,
-                    zip_codes=list(set(zip_codes)),
+                    city_code=row[0],
+                    zip_codes=[row[5]] if row[5] else [],
                 )
             )
 
