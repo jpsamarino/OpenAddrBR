@@ -32,6 +32,7 @@ class CityCore(NamedTuple):
 class CityInfo:
     """City information with reference coordinates (search output)."""
 
+    # remove city_normalized?
     city_code: int
     city_name: str
     city_normalized: str
@@ -44,6 +45,7 @@ class CityInfo:
 class NeighborhoodInfo:
     """Neighborhood information with reference coordinates (search output)."""
 
+    # remove neighborhood_normalized?
     neighborhood_name: str
     neighborhood_normalized: str
     city_code: int
@@ -55,6 +57,7 @@ class NeighborhoodInfo:
 class StreetInfo:
     """Street information (search output)."""
 
+    # remove street_normalized and neighborhood_normalized, add latitude and longitude
     street_id: int
     street_name: str
     street_normalized: str
@@ -62,6 +65,26 @@ class StreetInfo:
     zip_codes: list[str]
     neighborhood_name: str | None = None
     neighborhood_normalized: str | None = None
+
+
+@dataclass
+class StreetSegmentInfo:
+    """Street segment with reference coordinates (search output).
+
+    Aggregates multiple zip_codes for same street+neighborhood when 'A' rows
+    only add CEP variations. 'A' rows with different street names are only
+    added if that street_normalized hasn't been seen before.
+    """
+
+    id: int
+    street_id: int
+    street_name: str
+    street_normalized: str
+    neighborhood_name: str
+    neighborhood_normalized: str
+    zip_codes: list[str]
+    latitude: float
+    longitude: float
 
 
 @dataclass

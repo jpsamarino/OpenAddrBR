@@ -1,6 +1,6 @@
 """Location autocomplete using TextSearchEngine."""
 
-from openaddrbr.core.models import CityInfo, NeighborhoodInfo, StreetInfo
+from openaddrbr.core.models import CityInfo, NeighborhoodInfo, StreetSegmentInfo
 from openaddrbr.data import SqlAddressDataStore
 from openaddrbr.data._text_search import TextSearchEngine
 from openaddrbr.utils import normalize_text
@@ -80,7 +80,7 @@ class LocationSearch:
         query: str,
         neighborhood: str | None = None,
         limit: int = 10,
-    ) -> list[StreetInfo]:
+    ) -> list[StreetSegmentInfo]:
         """Search for streets by name using ngram autocomplete.
 
         Args:

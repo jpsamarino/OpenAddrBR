@@ -10,7 +10,7 @@ from openaddrbr.core.models import (
     CityInfo,
     NeighborhoodInfo,
     SearchHit,
-    StreetInfo,
+    StreetSegmentInfo,
 )
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ class AddressDataStore(Protocol):
     def query_geo_locations(
         self, street_id: int, number: int, limit: int = 3
     ) -> "list[GeoInfoRecord]": ...
-    def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetInfo]: ...
+    def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetSegmentInfo]: ...
 
 
 @runtime_checkable

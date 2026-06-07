@@ -15,7 +15,7 @@ from openaddrbr.core.models import (
     CityRecord,
     FullAddressRecord,
     GeoInfoRecord,
-    StreetInfo,
+    StreetSegmentInfo,
 )
 from openaddrbr.utils import normalize_text
 
@@ -158,11 +158,13 @@ class SqlAddressDataStore(AddressDataStore):
         )
         return [r[0] for r in cursor.fetchall()]
 
-    def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetInfo]:
-        """Bulk lookup for street info by street_ids.
+    def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetSegmentInfo]:
+        """Bulk lookup for street segments by street_ids.
 
         Uses apsw.carray for efficient IN clause without placeholder expansion.
-        Returns all rows (may have duplicates street_id with different names).
+        Aggregates 'A' rows with same id and street_name by adding CEP to 'O' row.
+        'A' rows with different street_name are only added if that street_normalized
+        hasn't been seen before across all street_ids.
         """
         if not street_ids:
             return []
@@ -170,27 +172,101 @@ class SqlAddressDataStore(AddressDataStore):
         cursor = self._get_cursor()
         q_arr = array.array('q', street_ids)
         cursor.execute(
-            """SELECT street_id, street_name, street_normalized,
+            """SELECT id, street_id, street_name, street_normalized,
                        neighborhood_name, neighborhood_normalized,
-                       zip_code
+                       zip_code, ref_latitude, ref_longitude, source_type
                 FROM address
                 WHERE street_id IN carray(?)
-                ORDER BY qt_refs DESC""",
+                ORDER BY street_id, id, source_type DESC""",
             (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
         )
 
-        results = []
-        for row in cursor.fetchall():
-            results.append(
-                StreetInfo(
-                    street_id=row[0],
-                    street_name=row[1],
-                    street_normalized=row[2],
-                    city_code=row[0],
-                    zip_codes=[row[5]] if row[5] else [],
-                    neighborhood_name=row[3] if row[3] else None,
-                    neighborhood_normalized=row[4] if row[4] else None,
-                )
-            )
+        segments: list[StreetSegmentInfo] = []
+        seen_street_names: set[str] = set()  # track street_normalized across all street_ids
+        pending_a: dict[int, int] = {}  # maps id -> segment index for 'O' rows awaiting 'A'
 
-        return results
+        for row in cursor.fetchall():
+            id = row[0]
+            street_id = row[1]
+            street_name = row[2]
+            street_norm = row[3]
+            neighborhood_name = row[4] or ""
+            neighborhood_norm = row[5] or ""
+            zip_code = row[6]
+            latitude = row[7] or 0.0
+            longitude = row[8] or 0.0
+            source_type = row[9]
+
+            if source_type == 'U':
+                # Unique row - create new segment
+                segments.append(StreetSegmentInfo(
+                    id=id,
+                    street_id=street_id,
+                    street_name=street_name,
+                    street_normalized=street_norm,
+                    neighborhood_name=neighborhood_name,
+                    neighborhood_normalized=neighborhood_norm,
+                    zip_codes=[zip_code] if zip_code else [],
+                    latitude=latitude,
+                    longitude=longitude,
+                ))
+                seen_street_names.add(street_norm)
+
+            elif source_type == 'O':
+                # First occurrence - create new segment, wait for 'A' to add CEP
+                idx = len(segments)
+                segments.append(StreetSegmentInfo(
+                    id=id,
+                    street_id=street_id,
+                    street_name=street_name,
+                    street_normalized=street_norm,
+                    neighborhood_name=neighborhood_name,
+                    neighborhood_normalized=neighborhood_norm,
+                    zip_codes=[zip_code] if zip_code else [],
+                    latitude=latitude,
+                    longitude=longitude,
+                ))
+                pending_a[id] = idx
+                seen_street_names.add(street_norm)
+
+            elif source_type == 'A':
+                # Additional row - check if same name or different
+                if id in pending_a:
+                    # Same id as pending 'O' - check if same street_name
+                    o_seg = segments[pending_a[id]]
+                    if o_seg.street_normalized == street_norm:
+                        # Same name - add CEP to 'O' segment
+                        if zip_code and zip_code not in o_seg.zip_codes:
+                            o_seg.zip_codes.append(zip_code)
+                    else:
+                        # Different name - only add if street_norm not seen before
+                        if street_norm not in seen_street_names:
+                            segments.append(StreetSegmentInfo(
+                                id=id,
+                                street_id=street_id,
+                                street_name=street_name,
+                                street_normalized=street_norm,
+                                neighborhood_name=neighborhood_name,
+                                neighborhood_normalized=neighborhood_norm,
+                                zip_codes=[zip_code] if zip_code else [],
+                                latitude=latitude,
+                                longitude=longitude,
+                            ))
+                            seen_street_names.add(street_norm)
+                else:
+                    # No pending 'O' for this id - same logic as above
+                    if street_norm not in seen_street_names:
+                        segments.append(StreetSegmentInfo(
+                            id=id,
+                            street_id=street_id,
+                            street_name=street_name,
+                            street_normalized=street_norm,
+                            neighborhood_name=neighborhood_name,
+                            neighborhood_normalized=neighborhood_norm,
+                            zip_codes=[zip_code] if zip_code else [],
+                            latitude=latitude,
+                            longitude=longitude,
+                        ))
+                        seen_street_names.add(street_norm)
+
+        return segments

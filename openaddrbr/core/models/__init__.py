@@ -17,6 +17,7 @@ from openaddrbr.core.models._models import (
     SearchHit,
     StreetCluster,
     StreetInfo,
+    StreetSegmentInfo,
 )
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "GeoInfoRecord",
     # Domain models
     "StreetCluster",
+    "StreetSegmentInfo",
     "CityCore",
     "CityInfo",
     "NeighborhoodInfo",

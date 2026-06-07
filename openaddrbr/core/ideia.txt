@@ -3,6 +3,8 @@ Geocoder
 ├── geocode_batch -> ok
 ├── geocode_city -> ?
 ├── geocode_neighborhood -> ?
+├── geocode_street -> ?
+├── geocode_street_number -> ?
 ├── reverse_geocode
 ├── get_addresses_in_radius
 └── get_street_numbers      ← busca números (precisa só do DB)
@@ -13,4 +15,4 @@ LocationSearch
 ├── search_street
 ├── autocomplete
 ├── parse_address
-└── search_cep
+└── search_cep #cep reverse
