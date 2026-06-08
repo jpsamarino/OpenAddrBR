@@ -1,7 +1,9 @@
 """Integration tests for LocationSearch.search_streets."""
+
 import pytest
 
 from openaddrbr.core import LocationSearch
+from openaddrbr.data import SqlAddressDataStore
 
 
 @pytest.fixture
@@ -14,8 +16,8 @@ def test_search_streets_returns_streetinfo(search):
     result = search.search_streets(city_code=3550308, query="Av. Brasil", limit=5)
     assert isinstance(result, list)
     if result:
-        assert hasattr(result[0], 'street_name')
-        assert hasattr(result[0], 'street_normalized')
+        assert hasattr(result[0], "street_name")
+        assert hasattr(result[0], "street_normalized")
 
 
 def test_search_streets_empty_query(search):
@@ -33,10 +35,7 @@ def test_search_streets_limit_respected(search):
 def test_search_streets_neighborhood_bonus_ordering(search):
     """When neighborhood provided, matching neighborhoods get score bonus."""
     results = search.search_streets(
-        city_code=3550308,
-        query="Av. Brasil",
-        neighborhood="Jardim",
-        limit=10
+        city_code=3550308, query="Av. Brasil", neighborhood="Jardim", limit=10
     )
     # Should not crash
 
@@ -59,12 +58,12 @@ def test_search_streets_cep_aggregation_and_deduplication(search):
     results = search.search_streets(
         city_code=3131703,  # Belo Horizonte
         query="Avenida Joao Cesar de Oliveira",
-        limit=20
+        limit=20,
     )
 
     # Verify StreetSegmentInfo structure with zip_codes
     for seg in results:
-        assert hasattr(seg, 'zip_codes')
+        assert hasattr(seg, "zip_codes")
         assert isinstance(seg.zip_codes, list)
         assert len(seg.zip_codes) >= 1
 
@@ -73,3 +72,53 @@ def test_search_streets_cep_aggregation_and_deduplication(search):
     street_names = [seg.street_name for seg in results]
     # The exact name "Avenida Joao Cesar de Oliveira" should appear only once
     # (at most once across all segments)
+
+
+def test_query_streets_by_query_id():
+    """Test query_streets_by_query_id with multiple query_ids.
+
+    Uses direct JOIN between address and street_query tables.
+    Verifies CEP aggregation and deduplication by (neighborhood, street).
+    """
+    db = SqlAddressDataStore()
+    query_ids = [
+        1097096,
+        1096908,
+        1098888,
+        1098874,
+        1099453,
+        1098886,
+        1098893,
+        1098882,
+        1098866,
+        1098858,
+    ]
+
+    segments = db.query_streets_by_query_id(query_ids)
+
+    assert len(segments) > 0
+    assert len(segments) <= len(query_ids) * 5  # reasonable upper bound
+
+    # Verify StreetSegmentInfo structure
+    for seg in segments:
+        assert hasattr(seg, "street_id")
+        assert hasattr(seg, "street_name")
+        assert hasattr(seg, "street_normalized")
+        assert hasattr(seg, "neighborhood_name")
+        assert hasattr(seg, "neighborhood_normalized")
+        assert hasattr(seg, "zip_codes")
+        assert hasattr(seg, "latitude")
+        assert hasattr(seg, "longitude")
+        assert isinstance(seg.zip_codes, list)
+        assert len(seg.zip_codes) >= 1
+
+    # Verify deduplication: same (neighborhood, street) should not appear twice
+    seen: set[tuple[str, str]] = set()
+    for seg in segments:
+        key = (seg.neighborhood_normalized, seg.street_normalized)
+        assert key not in seen, f"Duplicate found: {key}"
+        seen.add(key)
+
+    # Verify CEP aggregation: some segments should have multiple CEPs
+    multi_cep = [seg for seg in segments if len(seg.zip_codes) > 1]
+    assert len(multi_cep) > 0, "Expected some segments with aggregated CEPs"

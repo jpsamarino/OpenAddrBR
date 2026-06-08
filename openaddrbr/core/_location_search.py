@@ -100,43 +100,43 @@ class LocationSearch:
         if not hits:
             return []
 
-        # Parse all street_ids from hits
-        all_street_ids: set[int] = set()
+        # Collect query_ids from hits (simpler than street_ids - no commas)
+        query_ids: list[int] = []
         hit_scores: dict[int, float] = {}
         for hit in hits:
             street_doc = self._engine.get_street(hit.doc_address)
             if street_doc:
-                street_ids_str = street_doc.get("street_ids", "")
-                if street_ids_str:
-                    sid_list = [int(s) for s in street_ids_str.split(",") if s.isdigit()]
-                    for sid in sid_list:
-                        if sid not in hit_scores or hit.score > hit_scores[sid]:
-                            hit_scores[sid] = hit.score
-                    all_street_ids.update(sid_list)
+                query_id = street_doc.get("query_id")
+                if query_id is not None:
+                    qid = int(query_id)
+                    query_ids.append(qid)
+                    if qid not in hit_scores or hit.score > hit_scores[qid]:
+                        hit_scores[qid] = hit.score
 
-        if not all_street_ids:
+        if not query_ids:
             return []
 
-        # Bulk lookup from DB - StreetInfo has neighborhood_normalized
-        street_infos = self._addr_store.query_streets_by_ids(all_street_ids)
-        if not street_infos:
+        # Use query_streets_by_query_id for direct JOIN query
+        segments = self._addr_store.query_streets_by_query_id(query_ids)
+        if not segments:
             return []
 
-        # Build results with scores
+        # Build results with scores (order from hit_scores)
         results_with_scores = []
-        for info in street_infos:
-            base_score = hit_scores.get(info.street_id, 0.0)
-            results_with_scores.append((info, base_score))
+        for seg in segments:
+            # Use first matching hit score for this segment
+            base_score = hit_scores.get(seg.street_id, 0.0)
+            results_with_scores.append((seg, base_score))
 
-        # Apply neighborhood bonus if provided (using StreetInfo.neighborhood_normalized)
+        # Apply neighborhood bonus if provided
         if neighborhood:
             neighborhood_norm = normalize_text(neighborhood)
-            for i, (info, base_score) in enumerate(results_with_scores):
-                if info.neighborhood_normalized and neighborhood_norm in info.neighborhood_normalized:
-                    results_with_scores[i] = (info, base_score + 0.5)
+            for i, (seg, base_score) in enumerate(results_with_scores):
+                if seg.neighborhood_normalized and neighborhood_norm in seg.neighborhood_normalized:
+                    results_with_scores[i] = (seg, base_score + 0.5)
 
         # Sort by weighted score descending
         results_with_scores.sort(key=lambda x: x[1], reverse=True)
 
         # Return top 'limit' results
-        return [info for info, score in results_with_scores[:limit]]
+        return [seg for seg, score in results_with_scores[:limit]]
