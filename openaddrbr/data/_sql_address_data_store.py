@@ -159,13 +159,7 @@ class SqlAddressDataStore(AddressDataStore):
         return [r[0] for r in cursor.fetchall()]
 
     def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetSegmentInfo]:
-        """Bulk lookup for street segments by street_ids.
-
-        Uses apsw.carray for efficient IN clause without placeholder expansion.
-        Aggregates 'A' rows with same id and street_name by adding CEP to 'O' row.
-        'A' rows with different street_name are only added if that street_normalized
-        hasn't been seen before across all street_ids.
-        """
+        """Bulk lookup for street segments by street_ids."""
         if not street_ids:
             return []
 
@@ -182,10 +176,9 @@ class SqlAddressDataStore(AddressDataStore):
         )
 
         segments: list[StreetSegmentInfo] = []
-        seen_street_names: set[str] = set()
+        seen_street_names: set[tuple[str, str]] = set()
 
         for row in cursor.fetchall():
-            id = row[0]
             street_id = row[1]
             street_name = row[2]
             street_norm = row[3]
@@ -205,13 +198,12 @@ class SqlAddressDataStore(AddressDataStore):
                 ):
                     last_segment.zip_codes.append(zip_code)
                 else:
-                    if street_norm in seen_street_names:
+                    if (neighborhood_norm, street_norm) in seen_street_names:
                         continue
 
             else:
                 segments.append(
                     StreetSegmentInfo(
-                        id=id,
                         street_id=street_id,
                         street_name=street_name,
                         street_normalized=street_norm,
@@ -223,6 +215,6 @@ class SqlAddressDataStore(AddressDataStore):
                     )
                 )
 
-            seen_street_names.add(street_norm)
+            seen_street_names.add((neighborhood_norm, street_norm))
 
         return segments

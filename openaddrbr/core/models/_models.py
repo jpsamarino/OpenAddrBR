@@ -76,7 +76,6 @@ class StreetSegmentInfo:
     added if that street_normalized hasn't been seen before.
     """
 
-    id: int
     street_id: int
     street_name: str
     street_normalized: str
