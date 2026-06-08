@@ -158,6 +158,68 @@ class SqlAddressDataStore(AddressDataStore):
         )
         return [r[0] for r in cursor.fetchall()]
 
+    def query_streets_by_query_id(self, query_ids: Iterable[int]) -> list[StreetSegmentInfo]:
+        """Bulk lookup for street segments by query_id using direct JOIN.
+
+        Single query: JOIN address with street_query on city_code and
+        street_normalized, then aggregate O/A rows same as query_streets_by_ids.
+        """
+        if not query_ids:
+            return []
+
+        cursor = self._get_cursor()
+        q_arr = array.array("q", query_ids)
+        cursor.execute(
+            """SELECT ad.street_id, ad.street_name, ad.street_normalized,
+                      ad.neighborhood_name, ad.neighborhood_normalized,
+                      ad.zip_code, ad.ref_latitude, ad.ref_longitude, ad.source_type, ad.id
+               FROM address ad
+               INNER JOIN street_query s ON ad.city_code = s.city_code
+                   AND ad.street_normalized = s.street_normalized
+               WHERE s.query_id IN carray(?)
+               ORDER BY ad.street_id, ad.id, ad.source_type DESC""",
+            (apsw.carray(q_arr, flags=apsw.SQLITE_CARRAY_INT64),),
+        )
+
+        segments: list[StreetSegmentInfo] = []
+        seen_street_names: set[tuple[str, str]] = set()
+        last_added_street_id = None
+        for row in cursor.fetchall():
+            street_id = row[0]
+            street_name = row[1]
+            street_norm = row[2]
+            neighborhood_name = row[3] or ""
+            neighborhood_norm = row[4] or ""
+            zip_code = row[5]
+            latitude = row[6] or 0.0
+            longitude = row[7] or 0.0
+            source_type = row[8]
+            address_id = row[9]
+
+            if source_type == "A" and last_added_street_id == address_id and segments:
+                segments[-1].zip_codes.append(zip_code)
+            else:
+                if (neighborhood_norm, street_norm) in seen_street_names:
+                    continue
+                else:
+                    segments.append(
+                        StreetSegmentInfo(
+                            street_id=street_id,
+                            street_name=street_name,
+                            street_normalized=street_norm,
+                            neighborhood_name=neighborhood_name,
+                            neighborhood_normalized=neighborhood_norm,
+                            zip_codes=[zip_code] if zip_code else [],
+                            latitude=latitude,
+                            longitude=longitude,
+                        )
+                    )
+
+            seen_street_names.add((neighborhood_norm, street_norm))
+            last_added_street_id = address_id
+
+        return segments
+
     def query_streets_by_ids(self, street_ids: Iterable[int]) -> list[StreetSegmentInfo]:
         """Bulk lookup for street segments by street_ids."""
         if not street_ids:

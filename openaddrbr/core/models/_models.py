@@ -57,14 +57,11 @@ class NeighborhoodInfo:
 class StreetInfo:
     """Street information (search output)."""
 
-    # remove street_normalized and neighborhood_normalized, add latitude and longitude
     street_id: int
     street_name: str
-    street_normalized: str
+    neighborhood_name: list[str]
     city_code: int
     zip_codes: list[str]
-    neighborhood_name: str | None = None
-    neighborhood_normalized: str | None = None
 
 
 @dataclass
