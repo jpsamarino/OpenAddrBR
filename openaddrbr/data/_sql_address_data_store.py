@@ -172,7 +172,7 @@ class SqlAddressDataStore(AddressDataStore):
         cursor.execute(
             """SELECT ad.street_id, ad.street_name, ad.street_normalized,
                       ad.neighborhood_name, ad.neighborhood_normalized,
-                      ad.zip_code, ad.ref_latitude, ad.ref_longitude, ad.source_type, ad.id
+                      ad.zip_code, ad.ref_latitude, ad.ref_longitude, ad.source_type
                FROM address ad
                INNER JOIN street_query s ON ad.city_code = s.city_code
                    AND ad.street_normalized = s.street_normalized
@@ -183,7 +183,7 @@ class SqlAddressDataStore(AddressDataStore):
 
         segments: list[StreetSegmentInfo] = []
         seen_street_names: set[tuple[str, str]] = set()
-        last_added_street_id = None
+        last_address_tuple = None
         for row in cursor.fetchall():
             street_id = row[0]
             street_name = row[1]
@@ -194,12 +194,12 @@ class SqlAddressDataStore(AddressDataStore):
             latitude = row[6] or 0.0
             longitude = row[7] or 0.0
             source_type = row[8]
-            address_id = row[9]
 
-            if source_type == "A" and last_added_street_id == address_id and segments:
+            address_tuple = (street_norm, neighborhood_norm)
+            if source_type == "A" and address_tuple == last_address_tuple and segments:
                 segments[-1].zip_codes.append(zip_code)
             else:
-                if (neighborhood_norm, street_norm) in seen_street_names:
+                if address_tuple in seen_street_names:
                     continue
                 else:
                     segments.append(
@@ -215,8 +215,8 @@ class SqlAddressDataStore(AddressDataStore):
                         )
                     )
 
-            seen_street_names.add((neighborhood_norm, street_norm))
-            last_added_street_id = address_id
+            seen_street_names.add(address_tuple)
+            last_address_tuple = address_tuple
 
         return segments
 
