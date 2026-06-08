@@ -166,7 +166,7 @@ class SqlAddressDataStore(AddressDataStore):
         cursor = self._get_cursor()
         q_arr = array.array("q", street_ids)
         cursor.execute(
-            """SELECT id, street_id, street_name, street_normalized,
+            """SELECT street_id, street_name, street_normalized,
                        neighborhood_name, neighborhood_normalized,
                        zip_code, ref_latitude, ref_longitude, source_type
                 FROM address
@@ -179,15 +179,15 @@ class SqlAddressDataStore(AddressDataStore):
         seen_street_names: set[tuple[str, str]] = set()
 
         for row in cursor.fetchall():
-            street_id = row[1]
-            street_name = row[2]
-            street_norm = row[3]
-            neighborhood_name = row[4] or ""
-            neighborhood_norm = row[5] or ""
-            zip_code = row[6]
-            latitude = row[7] or 0.0
-            longitude = row[8] or 0.0
-            source_type = row[9]
+            street_id = row[0]
+            street_name = row[1]
+            street_norm = row[2]
+            neighborhood_name = row[3] or ""
+            neighborhood_norm = row[4] or ""
+            zip_code = row[5]
+            latitude = row[6] or 0.0
+            longitude = row[7] or 0.0
+            source_type = row[8]
 
             if source_type == "A":
                 last_segment = segments[-1] if segments else None
