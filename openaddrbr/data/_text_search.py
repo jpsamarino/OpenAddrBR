@@ -225,7 +225,7 @@ class TextSearchEngine(TextIndexSearcher):
             doc_address: Tantivy doc address from search_streets result.
 
         Returns:
-            Dict with query_id, street_ids, neighborhood_code, or None.
+            Dict with query_id (int) or None.
         """
         index = self._get_street_index()
         searcher = index.searcher()
@@ -235,8 +235,4 @@ class TextSearchEngine(TextIndexSearcher):
         except KeyError:
             return None
 
-        return {
-            "query_id": doc.get_first("query_id"),
-            "street_ids": doc.get_first("street_ids") or "",
-            "neighborhood_code": doc.get_first("neighborhood_code"),
-        }
+        return {"query_id": doc.get_first("query_id")}
