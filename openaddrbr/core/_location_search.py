@@ -108,10 +108,9 @@ class LocationSearch:
             if street_doc:
                 query_id = street_doc.get("query_id")
                 if query_id is not None:
-                    qid = int(query_id)
-                    query_ids.append(qid)
-                    if qid not in hit_scores or hit.score > hit_scores[qid]:
-                        hit_scores[qid] = hit.score
+                    query_ids.append(query_id)
+                    if query_id not in hit_scores or hit.score > hit_scores[query_id]:
+                        hit_scores[query_id] = hit.score
 
         if not query_ids:
             return []
