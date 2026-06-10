@@ -39,12 +39,9 @@ class LocationSearch:
         if not hits:
             return []
 
-        cities = []
-        for hit in hits:
-            city = self._engine.get_city(hit.doc_address)
-            if city is not None:
-                cities.append(city)
-        return cities
+        doc_addresses = [hit.doc_address for hit in hits]
+        cities_data = self._engine.get_cities_batch(doc_addresses)
+        return [c for c in cities_data if c is not None]
 
     def search_neighborhoods(
         self, query: str, city_code: int, limit: int = 10
@@ -67,12 +64,9 @@ class LocationSearch:
         if not hits:
             return []
 
-        neighborhoods = []
-        for hit in hits:
-            neighborhood = self._engine.get_neighborhood(hit.doc_address)
-            if neighborhood is not None:
-                neighborhoods.append(neighborhood)
-        return neighborhoods
+        doc_addresses = [hit.doc_address for hit in hits]
+        neighborhoods_data = self._engine.get_neighborhoods_batch(doc_addresses)
+        return [n for n in neighborhoods_data if n is not None]
 
     def search_streets(
         self,

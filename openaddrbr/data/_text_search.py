@@ -14,7 +14,7 @@ from openaddrbr.utils import normalize_text
 class TextSearchEngine(TextIndexSearcher):
     """Unified Tantivy text search engine for cities and neighborhoods.
 
-    Loads indices lazily on first use and caches them internally.
+    Loads indices lazily on first use and caches searchers internally.
     Single instance manages all text search indices.
 
     Args:
@@ -29,6 +29,8 @@ class TextSearchEngine(TextIndexSearcher):
         self._city_index: tantivy.Index | None = None
         self._neighborhood_index: tantivy.Index | None = None
         self._street_index: tantivy.Index | None = None
+        self._city_searcher: tantivy.Searcher | None = None
+        self._neighborhood_searcher: tantivy.Searcher | None = None
         self._street_searcher: tantivy.Searcher | None = None
 
     def _resolve_path(self, index_name: str) -> Path:
@@ -64,6 +66,24 @@ class TextSearchEngine(TextIndexSearcher):
             self._street_index = self._open_index("city_street_index")
         return self._street_index
 
+    def _get_city_searcher(self) -> tantivy.Searcher:
+        """Get cached city searcher, creating it lazily if needed."""
+        if self._city_searcher is None:
+            self._city_searcher = self._get_city_index().searcher()
+        return self._city_searcher
+
+    def _get_neighborhood_searcher(self) -> tantivy.Searcher:
+        """Get cached neighborhood searcher, creating it lazily if needed."""
+        if self._neighborhood_searcher is None:
+            self._neighborhood_searcher = self._get_neighborhood_index().searcher()
+        return self._neighborhood_searcher
+
+    def _get_street_searcher(self) -> tantivy.Searcher:
+        """Get cached street searcher, creating it lazily if needed."""
+        if self._street_searcher is None:
+            self._street_searcher = self._get_street_index().searcher()
+        return self._street_searcher
+
     def _build_ngram_query(
         self,
         query_text: str,
@@ -92,7 +112,7 @@ class TextSearchEngine(TextIndexSearcher):
             List of SearchHit(score, doc_address).
         """
         index = self._get_city_index()
-        searcher = index.searcher()
+        searcher = self._get_city_searcher()
         schema = index.schema
 
         ngram_query = self._build_ngram_query(query_text, "city_search", schema)
@@ -101,33 +121,6 @@ class TextSearchEngine(TextIndexSearcher):
 
         results = searcher.search(ngram_query, limit=limit)
         return [SearchHit(*hit) for hit in results.hits]
-
-    def get_city(self, doc_address: int) -> CityInfo | None:
-        """Resolve a city document by address.
-
-        Args:
-            doc_address: Tantivy doc address from search_cities result.
-
-        Returns:
-            CityInfo or None if not found.
-        """
-        index = self._get_city_index()
-        searcher = index.searcher()
-
-        try:
-            doc = searcher.doc(doc_address)
-        except KeyError:
-            return None
-
-        city_name = doc.get_first("city_name") or ""
-        return CityInfo(
-            city_code=doc.get_first("city_code"),
-            city_name=city_name,
-            city_normalized=normalize_text(city_name),
-            state_code=doc.get_first("state_code"),
-            latitude=doc.get_first("ref_latitude"),
-            longitude=doc.get_first("ref_longitude"),
-        )
 
     def search_neighborhoods(
         self, query_text: str, city_code: int, limit: int = 10
@@ -143,7 +136,7 @@ class TextSearchEngine(TextIndexSearcher):
             List of SearchHit(score, doc_address).
         """
         index = self._get_neighborhood_index()
-        searcher = index.searcher()
+        searcher = self._get_neighborhood_searcher()
         schema = index.schema
 
         ngram_query = self._build_ngram_query(
@@ -161,32 +154,6 @@ class TextSearchEngine(TextIndexSearcher):
         results = searcher.search(final_query, limit=limit)
         return [SearchHit(*hit) for hit in results.hits]
 
-    def get_neighborhood(self, doc_address: int) -> NeighborhoodInfo | None:
-        """Resolve a neighborhood document by address.
-
-        Args:
-            doc_address: Tantivy doc address from search_neighborhoods result.
-
-        Returns:
-            NeighborhoodInfo or None if not found.
-        """
-        index = self._get_neighborhood_index()
-        searcher = index.searcher()
-
-        try:
-            doc = searcher.doc(doc_address)
-        except KeyError:
-            return None
-
-        neighborhood_name = doc.get_first("neighborhood_name") or ""
-        return NeighborhoodInfo(
-            neighborhood_name=neighborhood_name,
-            neighborhood_normalized=normalize_text(neighborhood_name),
-            city_code=doc.get_first("city_code"),
-            latitude=doc.get_first("ref_latitude"),
-            longitude=doc.get_first("ref_longitude"),
-        )
-
     def search_streets(
         self, query_text: str, city_code: int, limit: int = 10
     ) -> list[SearchHit]:
@@ -201,7 +168,7 @@ class TextSearchEngine(TextIndexSearcher):
             List of SearchHit(score, doc_address).
         """
         index = self._get_street_index()
-        searcher = index.searcher()
+        searcher = self._get_street_searcher()
         schema = index.schema
 
         ngram_query = self._build_ngram_query(
@@ -219,25 +186,6 @@ class TextSearchEngine(TextIndexSearcher):
         results = searcher.search(final_query, limit=limit)
         return [SearchHit(*hit) for hit in results.hits]
 
-    def get_query_id(self, doc_address: int) -> int | None:
-        """Get query_id from street document.
-
-        Args:
-            doc_address: Tantivy doc address from search_streets result.
-
-        Returns:
-            query_id (int) or None if not found.
-        """
-        index = self._get_street_index()
-        searcher = index.searcher()
-
-        try:
-            doc = searcher.doc(doc_address)
-        except KeyError:
-            return None
-
-        return doc.get_first("query_id")
-
     def get_query_ids_batch(self, doc_addresses: list[int]) -> list[int | None]:
         """Get query_ids for multiple street documents using a single searcher.
 
@@ -250,14 +198,73 @@ class TextSearchEngine(TextIndexSearcher):
         if not doc_addresses:
             return []
 
-        if self._street_searcher is None:
-            self._street_searcher = self._get_street_index().searcher()
-
+        searcher = self._get_street_searcher()
         results: list[int | None] = []
         for addr in doc_addresses:
             try:
-                doc = self._street_searcher.doc(addr)
+                doc = searcher.doc(addr)
                 results.append(doc.get_first("query_id"))
+            except KeyError:
+                results.append(None)
+
+        return results
+
+    def get_cities_batch(self, doc_addresses: list[int]) -> list[CityInfo | None]:
+        """Get cities for multiple doc addresses using a single searcher.
+
+        Args:
+            doc_addresses: List of Tantivy doc addresses from search_cities results.
+
+        Returns:
+            List of CityInfo or None for each doc_address.
+        """
+        if not doc_addresses:
+            return []
+
+        searcher = self._get_city_searcher()
+        results: list[CityInfo | None] = []
+        for addr in doc_addresses:
+            try:
+                doc = searcher.doc(addr)
+                city_name = doc.get_first("city_name") or ""
+                results.append(CityInfo(
+                    city_code=doc.get_first("city_code"),
+                    city_name=city_name,
+                    city_normalized=normalize_text(city_name),
+                    state_code=doc.get_first("state_code"),
+                    latitude=doc.get_first("ref_latitude"),
+                    longitude=doc.get_first("ref_longitude"),
+                ))
+            except KeyError:
+                results.append(None)
+
+        return results
+
+    def get_neighborhoods_batch(self, doc_addresses: list[int]) -> list[NeighborhoodInfo | None]:
+        """Get neighborhoods for multiple doc addresses using a single searcher.
+
+        Args:
+            doc_addresses: List of Tantivy doc addresses from search_neighborhoods results.
+
+        Returns:
+            List of NeighborhoodInfo or None for each doc_address.
+        """
+        if not doc_addresses:
+            return []
+
+        searcher = self._get_neighborhood_searcher()
+        results: list[NeighborhoodInfo | None] = []
+        for addr in doc_addresses:
+            try:
+                doc = searcher.doc(addr)
+                neighborhood_name = doc.get_first("neighborhood_name") or ""
+                results.append(NeighborhoodInfo(
+                    neighborhood_name=neighborhood_name,
+                    neighborhood_normalized=normalize_text(neighborhood_name),
+                    city_code=doc.get_first("city_code"),
+                    latitude=doc.get_first("ref_latitude"),
+                    longitude=doc.get_first("ref_longitude"),
+                ))
             except KeyError:
                 results.append(None)
 
