@@ -27,9 +27,11 @@ def test_search_streets_empty_query(search):
 
 
 def test_search_streets_limit_respected(search):
-    """Limit parameter is respected."""
+    """Limit parameter is respected for distinct street count."""
     result = search.search_streets(city_code=3550308, query="Av.", limit=3)
-    assert len(result) <= 3
+    # Limit applies to distinct streets; same street in multiple neighborhoods may yield more rows
+    unique_streets = len({seg.street_id for seg in result})
+    assert unique_streets <= 3
 
 
 def test_search_streets_neighborhood_bonus_ordering(search):

@@ -1,6 +1,5 @@
 """Benchmark script for search_streets performance."""
 
-import json
 import sqlite3
 import time
 
@@ -8,6 +7,7 @@ from openaddrbr.core._location_search import LocationSearch
 from openaddrbr.utils import normalize_text
 
 TOTAL = 10000
+AUTOCOMPLETE_QUERY = True  # Toggle to switch between autocomplete and ngram search
 
 SGEODB = "D:/projetos/SD-External-Data/Scripts-Scraping/Get-Lat-Long/ibge_cnefe_v2/data/sgeobr.db"
 
@@ -38,12 +38,12 @@ def benchmark_full_flow(queries: list[tuple[str, int]]) -> float:
 
     # Warmup
     for q, city_code in queries[:100]:
-        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=AUTOCOMPLETE_QUERY)
 
     # Benchmark
     start = time.perf_counter()
     for q, city_code in queries:
-        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=AUTOCOMPLETE_QUERY)
     elapsed = time.perf_counter() - start
 
     qps = len(queries) / elapsed
@@ -56,16 +56,12 @@ def benchmark_tantivy_only(queries: list[tuple[str, int]]) -> float:
     search = LocationSearch()
     engine = search._engine
 
-    # # Warmup
-    # for q, city_code in queries[:100]:
-    #     engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
-
     # Benchmark
     all_hits = []
     start = time.perf_counter()
     for q, city_code in queries:
         hits = engine.search_streets(
-            normalize_text(q), city_code, limit=10, autocomplete_query=True
+            normalize_text(q), city_code, limit=10, autocomplete_query=AUTOCOMPLETE_QUERY
         )
         all_hits.append(hits)
     elapsed = time.perf_counter() - start
@@ -84,7 +80,7 @@ def benchmark_tantivy_and_postprocess(queries: list[tuple[str, int]]) -> float:
     addr_store = search._addr_store
 
     start = time.perf_counter()
-    _, sample_hits = benchmark_tantivy_only(queries)  # to get all_hits for the sample
+    _, sample_hits = benchmark_tantivy_only(queries)
 
     for hits in sample_hits:
         doc_addresses = [hit.doc_address for hit in hits]
@@ -102,7 +98,8 @@ def benchmark_tantivy_and_postprocess(queries: list[tuple[str, int]]) -> float:
 
 
 def main():
-    print(f"Tantivy street search benchmark - {TOTAL} random queries\n")
+    mode = "autocomplete" if AUTOCOMPLETE_QUERY else "ngram"
+    print(f"Tantivy street search benchmark - {TOTAL} random queries ({mode} mode)\n")
     print(f"Loading {TOTAL} random queries from {SGEODB}...")
     queries = load_random_queries(TOTAL)
     print(f"Loaded {len(queries)} queries\n")
@@ -111,7 +108,7 @@ def main():
     print("=== Warming up ===")
     search = LocationSearch()
     for q, city_code in queries[:100]:
-        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=AUTOCOMPLETE_QUERY)
     print()
 
     # Benchmarks
@@ -123,7 +120,7 @@ def main():
     print()
     print("=== Summary ===")
     print(f"Tantivy only:        {qps_tantivy:.0f} QPS")
-    # print(f"get_query_id + SQL:  ~{qps_sql:.0f} QPS (1000 sample)")
+    print(f"get_query_id + SQL:  ~{qps_sql:.0f} QPS")
     print(f"Full flow:           {qps_full:.0f} QPS")
 
 

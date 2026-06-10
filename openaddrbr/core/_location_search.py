@@ -3,7 +3,7 @@
 from openaddrbr.core.models import CityInfo, NeighborhoodInfo, StreetSegmentInfo
 from openaddrbr.data import SqlAddressDataStore
 from openaddrbr.data._text_search import TextSearchEngine
-from openaddrbr.utils import normalize_text
+from openaddrbr.utils import normalize_text, text_similarity
 
 
 class LocationSearch:
@@ -121,8 +121,10 @@ class LocationSearch:
         if neighborhood:
             neighborhood_norm = normalize_text(neighborhood)
             for i, (seg, base_score) in enumerate(results_with_scores):
-                if seg.neighborhood_normalized and neighborhood_norm in seg.neighborhood_normalized:
-                    results_with_scores[i] = (seg, base_score + 0.5)
+                if seg.neighborhood_normalized:
+                    sim = text_similarity(neighborhood_norm, seg.neighborhood_normalized)
+                    boost = sim * 0.5
+                    results_with_scores[i] = (seg, base_score + boost)
 
         results_with_scores.sort(key=lambda x: x[1], reverse=True)
 

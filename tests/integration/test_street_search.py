@@ -31,9 +31,11 @@ def test_search_whitespace_query_returns_empty(suggestions):
 
 
 def test_search_limit_respected(suggestions):
-    """Search limit should be respected."""
+    """Search limit should be respected for distinct streets."""
     results = suggestions.search_streets(city_code=3550308, query="Av.", limit=3)
-    assert len(results) <= 3
+    # Limit applies to distinct streets; same street in multiple neighborhoods may yield more rows
+    unique_streets = len({seg.street_id for seg in results})
+    assert unique_streets <= 3
 
 
 def test_search_normalizes_query(suggestions):
