@@ -100,17 +100,22 @@ class LocationSearch:
         if not hits:
             return []
 
-        # Collect query_ids from hits (simpler than street_ids - no commas)
-        query_ids: list[int] = []
+        # Collect doc_addresses and scores first
+        doc_addresses = [hit.doc_address for hit in hits]
         hit_scores: dict[int, float] = {}
-        for hit in hits:
-            street_doc = self._engine.get_street(hit.doc_address)
-            if street_doc:
-                query_id = street_doc.get("query_id")
-                if query_id is not None:
-                    query_ids.append(query_id)
-                    if query_id not in hit_scores or hit.score > hit_scores[query_id]:
-                        hit_scores[query_id] = hit.score
+
+        # Use batch get_query_ids (single searcher for all)
+        query_ids_list = self._engine.get_query_ids_batch(doc_addresses)
+
+        # Build query_ids in one pass
+        query_ids: list[int] = [qid for qid in query_ids_list if qid is not None]
+
+        # Track best score per query_id using the hits (need to re-associate)
+        # Since query_ids_list is aligned with hits, we can zip them
+        for hit, qid in zip(hits, query_ids_list):
+            if qid is not None:
+                if qid not in hit_scores or hit.score > hit_scores[qid]:
+                    hit_scores[qid] = hit.score
 
         if not query_ids:
             return []

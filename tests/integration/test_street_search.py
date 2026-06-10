@@ -101,11 +101,11 @@ def test_streetinfo_has_street_normalized(suggestions):
         assert all(hasattr(r, 'street_normalized') for r in results)
 
 
-def test_streetinfo_has_city_code(suggestions):
-    """StreetInfo objects have city_code field."""
+def test_streetinfo_has_required_fields(suggestions):
+    """StreetInfo objects have all required fields."""
     results = suggestions.search_streets(city_code=3550308, query="Av. Brasil", limit=5)
     if results:
-        assert all(hasattr(r, 'city_code') for r in results)
+        assert all(hasattr(r, 'street_id') and hasattr(r, 'street_name') and hasattr(r, 'zip_codes') for r in results)
 
 
 def test_streetinfo_has_zip_codes(suggestions):

@@ -29,6 +29,7 @@ class TextSearchEngine(TextIndexSearcher):
         self._city_index: tantivy.Index | None = None
         self._neighborhood_index: tantivy.Index | None = None
         self._street_index: tantivy.Index | None = None
+        self._street_searcher: tantivy.Searcher | None = None
 
     def _resolve_path(self, index_name: str) -> Path:
         """Resolve index path, checking for tantivy subfolder."""
@@ -218,14 +219,14 @@ class TextSearchEngine(TextIndexSearcher):
         results = searcher.search(final_query, limit=limit)
         return [SearchHit(*hit) for hit in results.hits]
 
-    def get_street(self, doc_address: int) -> dict | None:
-        """Get raw street data from document.
+    def get_query_id(self, doc_address: int) -> int | None:
+        """Get query_id from street document.
 
         Args:
             doc_address: Tantivy doc address from search_streets result.
 
         Returns:
-            Dict with query_id (int) or None.
+            query_id (int) or None if not found.
         """
         index = self._get_street_index()
         searcher = index.searcher()
@@ -235,4 +236,29 @@ class TextSearchEngine(TextIndexSearcher):
         except KeyError:
             return None
 
-        return {"query_id": doc.get_first("query_id")}
+        return doc.get_first("query_id")
+
+    def get_query_ids_batch(self, doc_addresses: list[int]) -> list[int | None]:
+        """Get query_ids for multiple street documents using a single searcher.
+
+        Args:
+            doc_addresses: List of Tantivy doc addresses from search_streets results.
+
+        Returns:
+            List of query_ids (int) or None for each doc_address.
+        """
+        if not doc_addresses:
+            return []
+
+        if self._street_searcher is None:
+            self._street_searcher = self._get_street_index().searcher()
+
+        results: list[int | None] = []
+        for addr in doc_addresses:
+            try:
+                doc = self._street_searcher.doc(addr)
+                results.append(doc.get_first("query_id"))
+            except KeyError:
+                results.append(None)
+
+        return results

@@ -33,7 +33,7 @@ def mutate_query(street_normalized, mutation_type="random"):
         for w in words:
             if len(w) > 2 and random.random() > 0.5:
                 idx = random.randint(0, len(w) - 1)
-                w = w[:idx] + random.choice("aeioubcdefghjklmnopqrstuvwxyz") + w[idx + 1:]
+                w = w[:idx] + random.choice("aeioubcdefghjklmnopqrstuvwxyz") + w[idx + 1 :]
             result.append(w)
         return " ".join(result)
     elif mutation_type == "partial":
@@ -58,8 +58,14 @@ def run_benchmark():
         ("Full name", lambda s: s["street_normalized"]),
         ("Abbreviation", lambda s: mutate_query(s["street_normalized"], "abbreviation")),
         ("Partial", lambda s: mutate_query(s["street_normalized"], "partial")),
-        ("First 2 chars", lambda s: s["street_normalized"].split()[0][:2] if s["street_normalized"] else ""),
-        ("First 3 chars", lambda s: s["street_normalized"].split()[0][:3] if s["street_normalized"] else ""),
+        (
+            "First 2 chars",
+            lambda s: s["street_normalized"].split()[0][:2] if s["street_normalized"] else "",
+        ),
+        (
+            "First 3 chars",
+            lambda s: s["street_normalized"].split()[0][:3] if s["street_normalized"] else "",
+        ),
     ]
 
     results_summary = {}
@@ -95,10 +101,7 @@ def run_benchmark():
                 queries_tested += 1
 
                 # Check if expected street is in results
-                found = any(
-                    r.street_normalized[:20] == street_normalized[:20]
-                    for r in results
-                )
+                found = any(r.street_normalized[:20] == street_normalized[:20] for r in results)
                 if found:
                     total_found += 1
                 total_expected += 1
