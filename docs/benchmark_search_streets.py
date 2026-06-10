@@ -37,12 +37,12 @@ def benchmark_full_flow(queries: list[tuple[str, int]]) -> float:
 
     # Warmup
     for q, city_code in queries[:100]:
-        search.search_streets(city_code=city_code, query=q, limit=10)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
 
     # Benchmark
     start = time.perf_counter()
     for q, city_code in queries:
-        search.search_streets(city_code=city_code, query=q, limit=10)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
     elapsed = time.perf_counter() - start
 
     qps = len(queries) / elapsed
@@ -57,13 +57,13 @@ def benchmark_tantivy_only(queries: list[tuple[str, int]]) -> float:
 
     # Warmup
     for q, city_code in queries[:100]:
-        engine.search_streets(normalize_text(q), city_code, limit=10)
+        engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
 
     # Benchmark
     all_hits = []
     start = time.perf_counter()
     for q, city_code in queries:
-        hits = engine.search_streets(normalize_text(q), city_code, limit=10)
+        hits = engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
         all_hits.append(hits)
     elapsed = time.perf_counter() - start
 
@@ -106,7 +106,7 @@ def main():
     print("=== Warming up ===")
     search = LocationSearch()
     for q, city_code in queries[:100]:
-        search.search_streets(city_code=city_code, query=q, limit=10)
+        search.search_streets(city_code=city_code, query=q, limit=10, autocomplete_query=True)
     print()
 
     # Benchmarks
