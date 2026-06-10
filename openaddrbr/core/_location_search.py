@@ -74,38 +74,21 @@ class LocationSearch:
         query: str,
         neighborhood: str | None = None,
         limit: int = 10,
+        autocomplete_query: bool = False,
     ) -> list[StreetSegmentInfo]:
-        """Search for streets by name using ngram autocomplete.
-
-        Args:
-            city_code: IBGE city code.
-            query: Street name to search for.
-            neighborhood: Optional neighborhood for score boosting (not filtering).
-            limit: Max results to return.
-
-        Returns:
-            List of StreetInfo matching the query, ordered by weighted score.
-        """
         query_normalized = normalize_text(query)
         if not query_normalized:
             return []
 
-        hits = self._engine.search_streets(query_normalized, city_code, limit=limit)
+        hits = self._engine.search_streets(query_normalized, city_code, limit=limit, autocomplete_query=autocomplete_query)
         if not hits:
             return []
 
-        # Collect doc_addresses and scores first
         doc_addresses = [hit.doc_address for hit in hits]
         hit_scores: dict[int, float] = {}
-
-        # Use batch get_query_ids (single searcher for all)
         query_ids_list = self._engine.get_query_ids_batch(doc_addresses)
-
-        # Build query_ids in one pass
         query_ids: list[int] = [qid for qid in query_ids_list if qid is not None]
 
-        # Track best score per query_id using the hits (need to re-associate)
-        # Since query_ids_list is aligned with hits, we can zip them
         for hit, qid in zip(hits, query_ids_list):
             if qid is not None:
                 if qid not in hit_scores or hit.score > hit_scores[qid]:
@@ -114,27 +97,21 @@ class LocationSearch:
         if not query_ids:
             return []
 
-        # Use query_streets_by_query_id for direct JOIN query
         segments = self._addr_store.query_streets_by_query_id(query_ids)
         if not segments:
             return []
 
-        # Build results with scores (order from hit_scores)
         results_with_scores = []
         for seg in segments:
-            # Use first matching hit score for this segment
             base_score = hit_scores.get(seg.street_id, 0.0)
             results_with_scores.append((seg, base_score))
 
-        # Apply neighborhood bonus if provided
         if neighborhood:
             neighborhood_norm = normalize_text(neighborhood)
             for i, (seg, base_score) in enumerate(results_with_scores):
                 if seg.neighborhood_normalized and neighborhood_norm in seg.neighborhood_normalized:
                     results_with_scores[i] = (seg, base_score + 0.5)
 
-        # Sort by weighted score descending
         results_with_scores.sort(key=lambda x: x[1], reverse=True)
 
-        # Return top 'limit' results
         return [seg for seg, score in results_with_scores[:limit]]

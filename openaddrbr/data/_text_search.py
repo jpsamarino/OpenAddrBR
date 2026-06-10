@@ -23,6 +23,8 @@ class TextSearchEngine(TextIndexSearcher):
     """
 
     _ngram_analyzer = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=False)).build()
+    _ngram_prefix = TextAnalyzerBuilder(Tokenizer.ngram(2, 4, prefix_only=True)).build()
+    _ngram_34 = TextAnalyzerBuilder(Tokenizer.ngram(3, 4, prefix_only=False)).build()
 
     def __init__(self, data_path: Path | None = None):
         self._data_path = data_path or get_tantivy_dir()
@@ -101,6 +103,40 @@ class TextSearchEngine(TextIndexSearcher):
 
         return tantivy.Query.boolean_query(subqueries, minimum_number_should_match=1)
 
+    def _build_autocomplete_query(self, query_text: str, schema) -> tantivy.Query | None:
+        """Autocomplete query with prefix boost for last term."""
+        terms = [t for t in query_text.strip().split() if t]
+        if not terms:
+            return None
+
+        subs = []
+
+        if len(terms) == 1:
+            tokens = self._ngram_prefix.analyze(query_text)
+        else:
+            for term in terms[:-1]:
+                tokens = self._ngram_34.analyze(term)
+                for t in tokens:
+                    if t:
+                        subs.append((Occur.Should, tantivy.Query.term_query(schema, "street_search", t)))
+
+            tokens = self._ngram_prefix.analyze(terms[-1])
+
+        for t in tokens:
+            if t:
+                subs.append((Occur.Should, tantivy.Query.term_query(schema, "street_search", t)))
+
+        if terms:
+            last = terms[-1]
+            if len(last) >= 2:
+                try:
+                    prefix_q = tantivy.Query.parse_query(f"street_search:{last}*", ["street_search"])
+                    subs.append((Occur.Should, prefix_q))
+                except Exception:
+                    pass
+
+        return tantivy.Query.boolean_query(subs, 1) if subs else None
+
     def search_cities(self, query_text: str, limit: int = 10) -> list[SearchHit]:
         """Search cities by normalized text.
 
@@ -139,9 +175,7 @@ class TextSearchEngine(TextIndexSearcher):
         searcher = self._get_neighborhood_searcher()
         schema = index.schema
 
-        ngram_query = self._build_ngram_query(
-            query_text, "neighborhood_search", schema
-        )
+        ngram_query = self._build_ngram_query(query_text, "neighborhood_search", schema)
         if ngram_query is None:
             return []
 
@@ -155,15 +189,16 @@ class TextSearchEngine(TextIndexSearcher):
         return [SearchHit(*hit) for hit in results.hits]
 
     def search_streets(
-        self, query_text: str, city_code: int, limit: int = 10
+        self, query_text: str, city_code: int, limit: int = 10, autocomplete_query: bool = False
     ) -> list[SearchHit]:
         index = self._get_street_index()
         searcher = self._get_street_searcher()
         schema = index.schema
 
-        ngram_query = self._build_ngram_query(
-            query_text, "street_search", schema
-        )
+        if autocomplete_query:
+            ngram_query = self._build_autocomplete_query(query_text, schema)
+        else:
+            ngram_query = self._build_ngram_query(query_text, "street_search", schema)
         if ngram_query is None:
             return []
 
@@ -217,14 +252,16 @@ class TextSearchEngine(TextIndexSearcher):
             try:
                 doc = searcher.doc(addr)
                 city_name = doc.get_first("city_name") or ""
-                results.append(CityInfo(
-                    city_code=doc.get_first("city_code"),
-                    city_name=city_name,
-                    city_normalized=normalize_text(city_name),
-                    state_code=doc.get_first("state_code"),
-                    latitude=doc.get_first("ref_latitude"),
-                    longitude=doc.get_first("ref_longitude"),
-                ))
+                results.append(
+                    CityInfo(
+                        city_code=doc.get_first("city_code"),
+                        city_name=city_name,
+                        city_normalized=normalize_text(city_name),
+                        state_code=doc.get_first("state_code"),
+                        latitude=doc.get_first("ref_latitude"),
+                        longitude=doc.get_first("ref_longitude"),
+                    )
+                )
             except KeyError:
                 results.append(None)
 
@@ -248,13 +285,15 @@ class TextSearchEngine(TextIndexSearcher):
             try:
                 doc = searcher.doc(addr)
                 neighborhood_name = doc.get_first("neighborhood_name") or ""
-                results.append(NeighborhoodInfo(
-                    neighborhood_name=neighborhood_name,
-                    neighborhood_normalized=normalize_text(neighborhood_name),
-                    city_code=doc.get_first("city_code"),
-                    latitude=doc.get_first("ref_latitude"),
-                    longitude=doc.get_first("ref_longitude"),
-                ))
+                results.append(
+                    NeighborhoodInfo(
+                        neighborhood_name=neighborhood_name,
+                        neighborhood_normalized=normalize_text(neighborhood_name),
+                        city_code=doc.get_first("city_code"),
+                        latitude=doc.get_first("ref_latitude"),
+                        longitude=doc.get_first("ref_longitude"),
+                    )
+                )
             except KeyError:
                 results.append(None)
 

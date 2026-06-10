@@ -1,6 +1,7 @@
 """
 Benchmark for street autocomplete using LocationSearch.
 Tests performance and accuracy with various query patterns.
+Compares normal mode vs autocomplete_query mode.
 """
 
 import json
@@ -44,11 +45,12 @@ def mutate_query(street_normalized, mutation_type="random"):
     return street_normalized
 
 
-def run_benchmark():
-    """Run comprehensive benchmark."""
-    print("=" * 60)
-    print("STREET AUTOCOMPLETE BENCHMARK")
-    print("=" * 60)
+def run_benchmark(autocomplete_query=False):
+    """Run benchmark with optional autocomplete mode."""
+    mode_str = "AUTOCOMPLETE" if autocomplete_query else "NORMAL"
+    print(f"\n{'=' * 60}")
+    print(f"STREET AUTOCOMPLETE BENCHMARK - {mode_str} MODE")
+    print(f"{'=' * 60}")
 
     print("\nLoading benchmark samples...")
     samples = load_samples()
@@ -94,7 +96,9 @@ def run_benchmark():
 
             try:
                 start_time = time.time()
-                results = _suggestions.search_streets(query=query, city_code=city_code, limit=10)
+                results = _suggestions.search_streets(
+                    query=query, city_code=city_code, limit=10, autocomplete_query=autocomplete_query
+                )
                 query_time = time.time() - start_time
 
                 total_time += query_time
@@ -169,4 +173,36 @@ def run_benchmark():
 
 
 if __name__ == "__main__":
-    run_benchmark()
+    print("\n" + "=" * 60)
+    print("COMPARING NORMAL vs AUTOCOMPLETE MODE")
+    print("=" * 60)
+
+    results_normal = run_benchmark(autocomplete_query=False)
+    results_auto = run_benchmark(autocomplete_query=True)
+
+    print("\n" + "=" * 60)
+    print("COMPARISON SUMMARY")
+    print("=" * 60)
+    print(f"{'Test':<20} {'Normal ms':<12} {'Auto ms':<12} {'Speedup':<10} {'Acc Normal':<12} {'Acc Auto':<10}")
+    print("-" * 80)
+    for test_name in results_normal.keys():
+        rn = results_normal[test_name]
+        ra = results_auto[test_name]
+        speedup = rn["avg_time_ms"] / ra["avg_time_ms"] if ra["avg_time_ms"] > 0 else 0
+        print(
+            f"{test_name:<20} {rn['avg_time_ms']:<12.4f} {ra['avg_time_ms']:<12.4f} "
+            f"{speedup:<10.2f}x {rn['accuracy']:<12.1f}% {ra['accuracy']:<10.1f}%"
+        )
+
+    print("\n" + "=" * 60)
+    print("OVERALL COMPARISON")
+    print("=" * 60)
+    overall_normal_time = sum(r["avg_time_ms"] for r in results_normal.values()) / len(results_normal)
+    overall_auto_time = sum(r["avg_time_ms"] for r in results_auto.values()) / len(results_auto)
+    overall_normal_acc = sum(r["accuracy"] for r in results_normal.values()) / len(results_normal)
+    overall_auto_acc = sum(r["accuracy"] for r in results_auto.values()) / len(results_auto)
+    speedup = overall_normal_time / overall_auto_time if overall_auto_time > 0 else 0
+
+    print(f"Normal mode - Avg time: {overall_normal_time:.4f}ms, Avg accuracy: {overall_normal_acc:.1f}%")
+    print(f"Auto mode  - Avg time: {overall_auto_time:.4f}ms, Avg accuracy: {overall_auto_acc:.1f}%")
+    print(f"Speedup: {speedup:.2f}x")
