@@ -157,16 +157,6 @@ class TextSearchEngine(TextIndexSearcher):
     def search_streets(
         self, query_text: str, city_code: int, limit: int = 10
     ) -> list[SearchHit]:
-        """Search streets by normalized text with city_code filter.
-
-        Args:
-            query_text: Normalized street name text.
-            city_code: IBGE city code to filter by.
-            limit: Max results to return.
-
-        Returns:
-            List of SearchHit(score, doc_address).
-        """
         index = self._get_street_index()
         searcher = self._get_street_searcher()
         schema = index.schema
