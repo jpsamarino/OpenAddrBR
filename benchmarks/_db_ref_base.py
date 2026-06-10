@@ -126,3 +126,26 @@ def query_street_query(query_ids: list[int]):
     placeholders = ",".join("?" * len(query_ids))
     query = f"SELECT street_normalized FROM street_query WHERE query_id IN ({placeholders})"
     return conn.execute(query, query_ids).fetchall()
+
+
+def query_streets_by_query_id(query_ids: list[int]):
+    """Bulk lookup for street segments by query_id using JOIN.
+
+    Aggregates multiple zip_codes for same street+neighborhood when 'A' rows
+    only add CEP variations.
+    """
+    if not query_ids:
+        return []
+    conn = get_connection()
+    placeholders = ",".join("?" * len(query_ids))
+    query = f"""
+        SELECT ad.street_id, ad.street_name, ad.street_normalized,
+               ad.neighborhood_name, ad.neighborhood_normalized,
+               ad.zip_code, ad.ref_latitude, ad.ref_longitude, ad.source_type
+        FROM address ad
+        INNER JOIN street_query s ON ad.city_code = s.city_code
+            AND ad.street_normalized = s.street_normalized
+        WHERE s.query_id IN ({placeholders})
+        ORDER BY ad.street_id, ad.id, ad.source_type DESC
+    """
+    return conn.execute(query, query_ids).fetchall()

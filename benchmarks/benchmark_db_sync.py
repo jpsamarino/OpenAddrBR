@@ -20,6 +20,7 @@ from benchmarks._db_ref_base import (
     query_full_address_by_street_id,
     query_geo_locations,
     query_street_query,
+    query_streets_by_query_id,
 )
 
 # APSW module-level
@@ -39,6 +40,7 @@ apsw_impl = {
     "query_geo_locations": _apsw_db.query_geo_locations,
     "query_street_query": _apsw_db.query_street_query,
     "query_address_by_street_names": _apsw_db.query_address_by_street_names,
+    "query_streets_by_query_id": _apsw_db.query_streets_by_query_id,
 }
 
 
@@ -92,11 +94,12 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
     datasets = {
         "get_city_info": load_json(data_dir / "get_city_info.json"),
         "is_multi_street_cep": load_json(data_dir / "is_multi_street_cep.json"),
-        "fetch_address_by_cep": load_json(data_dir / "fetch_address_by_cep.json"),
-        "fetch_address_by_street_id": load_json(data_dir / "fetch_address_by_street_id.json"),
-        "fetch_geo_location": load_json(data_dir / "fetch_geo_location.json"),
-        "fetch_street_by_query_ids": load_json(data_dir / "fetch_street_by_query_ids.json"),
-        "fetch_address_by_street_names": load_json(data_dir / "fetch_address_by_street_names.json"),
+        "query_address_by_cep": load_json(data_dir / "fetch_address_by_cep.json"),
+        "query_full_address_by_street_id": load_json(data_dir / "fetch_address_by_street_id.json"),
+        "query_geo_locations": load_json(data_dir / "fetch_geo_location.json"),
+        "query_street_query": load_json(data_dir / "fetch_street_by_query_ids.json"),
+        "query_streets_by_query_id": load_json(data_dir / "fetch_street_by_query_ids.json"),
+        "query_address_by_street_names": load_json(data_dir / "fetch_address_by_street_names.json"),
     }
 
     for db_name, data in datasets.items():
@@ -128,41 +131,49 @@ def run_benchmarks(name: str, impl: dict, data_dir: Path):
     print_result(r)
 
     r = benchmark_fn_sync(
-        "fetch_address_by_cep",
+        "query_address_by_cep",
         lambda p: impl["query_address_by_cep"](str(p), limit=10),
-        datasets["fetch_address_by_cep"],
+        datasets["query_address_by_cep"],
     )
     results.append(r)
     print_result(r)
 
     r = benchmark_fn_sync(
-        "fetch_address_by_street_id",
+        "query_full_address_by_street_id",
         lambda p: impl["query_full_address_by_street_id"](p),
-        datasets["fetch_address_by_street_id"],
+        datasets["query_full_address_by_street_id"],
     )
     results.append(r)
     print_result(r)
 
     r = benchmark_fn_sync(
-        "fetch_geo_location",
+        "query_geo_locations",
         lambda p: impl["query_geo_locations"](p["street_id"], p["number"], limit=3),
-        datasets["fetch_geo_location"],
+        datasets["query_geo_locations"],
     )
     results.append(r)
     print_result(r)
 
     r = benchmark_fn_sync(
-        "fetch_street_by_query_ids",
+        "query_street_query",
         lambda p: impl["query_street_query"](p[0]),
-        datasets["fetch_street_by_query_ids"],
+        datasets["query_street_query"],
     )
     results.append(r)
     print_result(r)
 
     r = benchmark_fn_sync(
-        "fetch_address_by_street_names",
+        "query_streets_by_query_id",
+        lambda p: impl["query_streets_by_query_id"](p[0]),
+        datasets["query_streets_by_query_id"],
+    )
+    results.append(r)
+    print_result(r)
+
+    r = benchmark_fn_sync(
+        "query_address_by_street_names",
         lambda p: impl["query_address_by_street_names"](p[0], p[1]),
-        datasets["fetch_address_by_street_names"],
+        datasets["query_address_by_street_names"],
     )
     results.append(r)
     print_result(r)
@@ -189,6 +200,7 @@ def main():
         "query_full_address_by_street_id": query_full_address_by_street_id,
         "query_geo_locations": query_geo_locations,
         "query_street_query": query_street_query,
+        "query_streets_by_query_id": query_streets_by_query_id,
         "query_address_by_street_names": query_address_by_street_names,
     }
 
