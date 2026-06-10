@@ -1,7 +1,8 @@
 """Benchmark script for search_streets performance."""
 
-import time
+import json
 import sqlite3
+import time
 
 from openaddrbr.core._location_search import LocationSearch
 from openaddrbr.utils import normalize_text
@@ -55,34 +56,36 @@ def benchmark_tantivy_only(queries: list[tuple[str, int]]) -> float:
     search = LocationSearch()
     engine = search._engine
 
-    # Warmup
-    for q, city_code in queries[:100]:
-        engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
+    # # Warmup
+    # for q, city_code in queries[:100]:
+    #     engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
 
     # Benchmark
     all_hits = []
     start = time.perf_counter()
     for q, city_code in queries:
-        hits = engine.search_streets(normalize_text(q), city_code, limit=10, autocomplete_query=True)
+        hits = engine.search_streets(
+            normalize_text(q), city_code, limit=10, autocomplete_query=True
+        )
         all_hits.append(hits)
     elapsed = time.perf_counter() - start
 
     qps = len(queries) / elapsed
     print(f"Tantivy only: {len(queries)} queries in {elapsed:.2f}s = {qps:.0f} QPS")
+
     return qps, all_hits
 
 
-def benchmark_sql_and_postprocess(queries: list[tuple[str, int]], all_hits: list) -> float:
+def benchmark_tantivy_and_postprocess(queries: list[tuple[str, int]]) -> float:
     """Benchmark get_query_ids_batch + SQL + postprocessing."""
+    print("Benchmarking Tantivy + get_query_ids + SQL...")
     search = LocationSearch()
     engine = search._engine
     addr_store = search._addr_store
 
-    # Benchmark on sample
-    sample = queries[:1000]
-    sample_hits = all_hits[:1000]
-
     start = time.perf_counter()
+    _, sample_hits = benchmark_tantivy_only(queries)  # to get all_hits for the sample
+
     for hits in sample_hits:
         doc_addresses = [hit.doc_address for hit in hits]
         query_ids_list = engine.get_query_ids_batch(doc_addresses)
@@ -91,8 +94,10 @@ def benchmark_sql_and_postprocess(queries: list[tuple[str, int]], all_hits: list
             segments = addr_store.query_streets_by_query_id(query_ids)
     elapsed = time.perf_counter() - start
 
-    qps = 1000 / elapsed
-    print(f"get_query_ids_batch + SQL (1000 sample): 1000 queries in {elapsed:.2f}s = {qps:.0f} QPS")
+    qps = len(sample_hits) / elapsed
+    print(
+        f"Tantivy + get_query_ids + SQL ({len(sample_hits)} sample): {len(sample_hits)} queries in {elapsed:.2f}s = {qps:.0f} QPS"
+    )
     return qps
 
 
@@ -112,13 +117,13 @@ def main():
     # Benchmarks
     print("=== Benchmarks ===")
     qps_tantivy, all_hits = benchmark_tantivy_only(queries)
-    qps_sql = benchmark_sql_and_postprocess(queries, all_hits)
+    qps_sql = benchmark_tantivy_and_postprocess(queries)
     qps_full = benchmark_full_flow(queries)
 
     print()
     print("=== Summary ===")
     print(f"Tantivy only:        {qps_tantivy:.0f} QPS")
-    print(f"get_query_id + SQL:  ~{qps_sql:.0f} QPS (1000 sample)")
+    # print(f"get_query_id + SQL:  ~{qps_sql:.0f} QPS (1000 sample)")
     print(f"Full flow:           {qps_full:.0f} QPS")
 
 

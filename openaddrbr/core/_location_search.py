@@ -76,11 +76,14 @@ class LocationSearch:
         limit: int = 10,
         autocomplete_query: bool = False,
     ) -> list[StreetSegmentInfo]:
+
         query_normalized = normalize_text(query)
         if not query_normalized:
             return []
 
-        hits = self._engine.search_streets(query_normalized, city_code, limit=limit, autocomplete_query=autocomplete_query)
+        hits = self._engine.search_streets(
+            query_normalized, city_code, limit=limit, autocomplete_query=autocomplete_query
+        )
         if not hits:
             return []
 
