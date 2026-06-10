@@ -6,7 +6,7 @@
 # Install from GitHub
 pip install git+https://github.com/jpsamarino/OpenAddrBR.git
 
-# Download data (~10GB) — IBGE census, Receita Federal, street data
+# Download data (~10GB)
 python -m openaddrbr download
 
 # Auto-tune performance (runs benchmark, detects best backend, creates .env)
@@ -56,6 +56,14 @@ def geocode(
 
 Converts a Brazilian address into lat/long coordinates. Uses CEP lookup when available (fast and accurate), falls back to vector search (embedding) when CEP is unavailable or belongs to a multi-street zone.
 
+**Embedding models:** The geocoder uses sentence transformer models (paraphrase-xlmr) to convert street names into dense vector embeddings. This embedding conversion is the most computationally expensive step — it can be slow on CPU, especially for batch operations.
+
+**GPU acceleration (CUDA):** For high-throughput workloads, the library supports CUDA (NVIDIA GPUs) via PyTorch. Enable it by setting the backend to `cuda` or `onnx-int8`:
+```python
+geocoder = Geocoder(backend="cuda")  # Requires NVIDIA GPU
+```
+GPUs shine at scale — for hundreds of millions of addresses, CUDA provides 10-50x speedup. For thousands of addresses, CPU is usually sufficient (~100 addresses/second in a modern CPU).
+
 **Example:**
 
 ```python
@@ -64,7 +72,7 @@ from openaddrbr.core import Geocoder
 geocoder = Geocoder()
 result = geocoder.geocode(
     street="Rua Marcelina",
-    neighborhood="Vila Mariana",
+    neighborhood="Vila Romana",
     city="São Paulo",
     state="SP",
     zip_code="04071-080",
@@ -75,8 +83,19 @@ print(result)
 
 **Output:**
 
-```
-AddressInfo(lat=-23.5505, long=-46.6333, street_name='Rua Marcelina', neighborhood='Vila Mariana', city='São Paulo', state='SP', zip_code='04071-080', number=142, ref_number_lat_long=0, address='Rua Marcelina, 142, Vila Mariana, São Paulo, SP')
+```json
+{
+  "lat": -23.530421,
+  "long": -46.693946,
+  "street_name": "Rua Marcelina",
+  "neighborhood": "Vila Romana",
+  "city": "São Paulo",
+  "state": "SP",
+  "zip_code": "05044010",
+  "number": 142,
+  "ref_number_lat_long": 140,
+  "address": "Rua Marcelina, 142, Vila Romana, São Paulo - SP, 05044010"
+}
 ```
 
 #### geocode_batch()
@@ -100,7 +119,7 @@ from openaddrbr.core.models import AddressRequest
 geocoder = Geocoder()
 addresses = [
     AddressRequest(city="São Paulo", state="SP", street="Rua Marcelina", neighborhood="Vila Mariana", zip_code="04071-080", street_number=142),
-    AddressRequest(city="Rio de Janeiro", state="RJ", street="Av Brasil", neighborhood="Centro", zip_code="20010-000", street_number=500),
+    AddressRequest(city="Rio de Janeiro", state="RJ", street="Av Brasil", neighborhood="Centro", zip_code="20010-000", street_number=382),
 ]
 results = geocoder.geocode_batch(addresses)
 for r in results:
@@ -109,9 +128,33 @@ for r in results:
 
 **Output:**
 
-```
-AddressInfo(lat=-23.5505, long=-46.6333, street_name='Rua Marcelina', neighborhood='Vila Mariana', city='São Paulo', state='SP', zip_code='04071-080', number=142, ref_number_lat_long=0, address='Rua Marcelina, 142, Vila Mariana, São Paulo, SP')
-AddressInfo(lat=-22.9068, long=-43.1729, street_name='Av Brasil', neighborhood='Centro', city='Rio de Janeiro', state='RJ', zip_code='20010-000', number=500, ref_number_lat_long=0, address='Av Brasil, 500, Centro, Rio de Janeiro, RJ')
+```json
+[
+  {
+    "lat": -23.530421,
+    "long": -46.693946,
+    "street_name": "Rua Marcelina",
+    "neighborhood": "Vila Romana",
+    "city": "São Paulo",
+    "state": "SP",
+    "zip_code": "05044010",
+    "number": 142,
+    "ref_number_lat_long": 140,
+    "address": "Rua Marcelina, 142, Vila Romana, São Paulo - SP, 05044010"
+  },
+  {
+    "lat": -22.864598,
+    "long": -43.429388,
+    "street_name": "Avenida Brasil",
+    "neighborhood": "Coelho Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "zip_code": "20010000",
+    "number": 500,
+    "ref_number_lat_long": 382,
+    "address": "Avenida Brasil, 500, Coelho Neto, Rio de Janeiro - RJ, 20010000"
+  }
+]
 ```
 
 ---
@@ -139,10 +182,33 @@ for c in cities:
 
 **Output:**
 
-```
-CityInfo(city_code=3550308, city_name='São Paulo', city_normalized='sao paulo', state_code='SP', latitude=-23.5505, longitude=-46.6333)
-CityInfo(city_code=3550209, city_name='São Paulo de Piranha', city_normalized='sao paulo de piranha', state_code='AM', latitude=-3.2015, longitude=-64.8085)
-CityInfo(city_code=3129806, city_name='São Paulo do Potengi', city_normalized='sao paulo do potengi', state_code='RN', latitude=-6.3782, longitude=-35.4464)
+```json
+[
+  {
+    "city_code": 3550308,
+    "city_name": "São Paulo",
+    "city_normalized": "SAO PAULO",
+    "state_code": "SP",
+    "latitude": -23.660746,
+    "longitude": -46.660769
+  },
+  {
+    "city_code": 2412609,
+    "city_name": "São Paulo do Potengi",
+    "city_normalized": "SAO PAULO DO POTENGI",
+    "state_code": "RN",
+    "latitude": -5.893018,
+    "longitude": -35.759248
+  },
+  {
+    "city_code": 1303908,
+    "city_name": "São Paulo de Olivença",
+    "city_normalized": "SAO PAULO DE OLIVENCA",
+    "state_code": "AM",
+    "latitude": -3.462009,
+    "longitude": -68.943902
+  }
+]
 ```
 
 #### search_neighborhoods()
@@ -169,9 +235,30 @@ for n in neighborhoods:
 
 **Output:**
 
-```
-NeighborhoodInfo(neighborhood_name='Vila Mariana', neighborhood_normalized='vila mariana', city_code=3550308, latitude=-23.5505, longitude=-46.6333)
-NeighborhoodInfo(neighborhood_name='Vila Clementino', neighborhood_normalized='vila clementino', city_code=3550308, latitude=-23.5421, longitude=-46.6181)
+```json
+[
+  {
+    "neighborhood_name": "Jardim Vila Mariana",
+    "neighborhood_normalized": "JARDIM VILA MARIANA",
+    "city_code": 3550308,
+    "latitude": -23.590027,
+    "longitude": -46.630295
+  },
+  {
+    "neighborhood_name": "Parque Novo Mundo",
+    "neighborhood_normalized": "PARQUE NOVO MUNDO",
+    "city_code": 3550308,
+    "latitude": -23.507527,
+    "longitude": -46.569041
+  },
+  {
+    "neighborhood_name": "Vila Maria",
+    "neighborhood_normalized": "VVILA MARIA",
+    "city_code": 3550308,
+    "latitude": -23.503524,
+    "longitude": -46.582151
+  }
+]
 ```
 
 #### search_streets()
@@ -209,9 +296,29 @@ for s in streets:
 
 **Output:**
 
-```
-StreetSegmentInfo(street_id=123456, street_name='Rua Marcelina', street_normalized='rua marcelina', neighborhood_name='Vila Mariana', neighborhood_normalized='vila mariana', zip_codes=['04071-080', '04071-090'], latitude=-23.5505, longitude=-46.6333)
-StreetSegmentInfo(street_id=123457, street_name='Rua Marcelina', street_normalized='rua marcelina', neighborhood_name='Vila Clementino', neighborhood_normalized='vila clementino', zip_codes=['04072-100'], latitude=-23.5421, longitude=-46.6181)
+```json
+[
+  {
+    "street_id": 2840143,
+    "street_name": "Rua Marcelina",
+    "street_normalized": "RUA MARCELINA",
+    "neighborhood_name": "Vila Romana",
+    "neighborhood_normalized": "VILA ROMANA",
+    "zip_codes": [5044010],
+    "latitude": -23.530424,
+    "longitude": -46.694252
+  },
+  {
+    "street_id": 2840143,
+    "street_name": "Rua Marcelina",
+    "street_normalized": "RUA MARCELINA",
+    "neighborhood_name": "Vila Pompeia",
+    "neighborhood_normalized": "VILA POMPEIA",
+    "zip_codes": [5044010],
+    "latitude": -23.530459,
+    "longitude": -46.693021
+  }
+]
 ```
 
 ---
@@ -242,7 +349,7 @@ class AddressInfo:
 class CityInfo:
     city_code: int          # IBGE city code
     city_name: str          # City name
-    city_normalized: str    # Normalized name (for search)
+    city_normalized: str    # Normalized name (uppercase, for search)
     state_code: str          # State code
     latitude: float          # Centroid latitude
     longitude: float         # Centroid longitude
@@ -254,7 +361,7 @@ class CityInfo:
 @dataclass
 class NeighborhoodInfo:
     neighborhood_name: str        # Neighborhood name
-    neighborhood_normalized: str  # Normalized name
+    neighborhood_normalized: str  # Normalized name (uppercase)
     city_code: int                # IBGE city code
     latitude: float               # Centroid latitude
     longitude: float              # Centroid longitude
@@ -267,10 +374,10 @@ class NeighborhoodInfo:
 class StreetSegmentInfo:
     street_id: int                # Unique street ID
     street_name: str              # Street name
-    street_normalized: str        # Normalized name
+    street_normalized: str        # Normalized name (uppercase)
     neighborhood_name: str        # Neighborhood name
-    neighborhood_normalized: str  # Normalized neighborhood name
-    zip_codes: list[str]          # List of CEPs
+    neighborhood_normalized: str  # Normalized neighborhood name (uppercase)
+    zip_codes: list[int]         # List of CEPs (as integers)
     latitude: float               # Centroid latitude
     longitude: float              # Centroid longitude
 ```
@@ -304,19 +411,24 @@ class StreetSegmentInfo:
 
 ### 4.1 Geocoder
 
-| Metric | Value |
-|--------|-------|
-| QPS (queries per second) | 43.0 |
-| Time per query | 23.23ms |
-| Match rate (IBGE result) | 90.7% |
-| Addresses <=100m | 55.0% |
-| Addresses <=1km | 81.8% |
+| Function | QPS | Per query | Match rate |
+|----------|-----|-----------|------------|
+| geocode() | 43.0 | 23.23ms | 90.7% |
+| geocode_batch() | 122.3 | 8.17ms | 90.7% |
+
+**Distance accuracy (geocode_batch, 4000 addresses):**
+- Median: 67.1m
+- <=100m: 55.0%
+- <=1km: 81.8%
 
 **What affects performance:**
 
-1. **CEP available (fastest)**: When CEP belongs to a single-street zone (`is_multi_street_cep` returns false), lookup uses CEP directly — no vector search needed.
-2. **Vector search fallback (slower)**: When no CEP is provided or it's a multi-street CEP, the system embeds the street name and searches the vector index (usearch). This is the slower path.
-3. **Batch size**: `geocode_batch` groups addresses by city/street to optimize batch encoding.
+1. **geocode() single**: CEP lookup when available (fast), otherwise embeds street name via sentence transformer (CPU-intensive, ~23ms on CPU).
+2. **geocode_batch()**: Groups addresses by city/street for batch embedding — 3x faster than single queries (~8ms each, 122 QPS).
+3. **GPU acceleration**: `backend="cuda"` speeds up embedding 10-50x for large batches.
+4. **CEP availability**: Single-street CEPs skip embedding entirely (fastest path).
+
+> **Benchmark environment:** Intel i7-14700, 32GB RAM, CPU only (no GPU). Results may vary with different hardware.
 
 ### 4.2 LocationSearch
 
@@ -379,202 +491,9 @@ LocationSearch follows this flow: **Tantivy search → SQL lookup → scoring**.
 | search_streets (autocomplete) | 0.34 | Good speed |
 | search_cities (full name) | 2.29 | Slightly slower |
 | search_neighborhoods (full name) | 1.78 | Medium |
-| geocode (single) | 23.23 | Slowest (vector search) |
+| geocode_batch() | 8.17 | Batch encoding — 3x faster |
+| geocode() single | 23.23 | Slowest — embedding on CPU |
+| geocode_batch (GPU) | ~2ms each | 10x faster with CUDA |
 
 ---
 
-## Benchmark Output
-
-### City Autocomplete
-
-```
-============================================================
-CITY AUTOCOMPLETE BENCHMARK
-============================================================
-
-Getting test samples from database...
-Loaded 1000 samples
-
-==================================================
-Test: Full name
-==================================================
-Queries tested: 100
-Errors: 0
-Avg time per query: 2.29ms
-Accuracy (expected in top 10): 100.0%
-
-Sample queries:
-  OK 'NOVO HORIZONTE DO OESTE' -> expected: NOVO HORIZONTE DO OESTE, first: Novo Horizonte do Oeste, got 10 results in 210.57ms
-  OK 'CAMPOS DO JORDAO' -> expected: CAMPOS DO JORDAO, first: Campos do Jordão, got 10 results in 0.0ms
-  OK 'AGUAS DE SAO PEDRO' -> expected: AGUAS DE SAO PEDRO, first: Aguas de São Pedro, got 10 results in 1.51ms
-  OK 'NAO-ME-TOQUE' -> expected: NAO-ME-TOQUE, first: Não-Me-Toque, got 10 results in 0.0ms
-  OK 'RIO NOVO' -> expected: RIO NOVO, first: Rio Novo, got 10 results in 0.0ms
-
-============================================================
-SUMMARY
-============================================================
-Test                 Queries    Avg ms     Accuracy
---------------------------------------------------
-Full name            100        2.29       100.0     %
-Abbreviation         100        0.10       74.0      %
-Partial              100        0.09       34.0      %
-First 2 chars        100        0.05       8.0       %
-First 3 chars        100        0.07       37.0      %
-
-Overall avg time: 0.52ms
-Overall avg accuracy: 50.6%
-```
-
-### Neighborhood Autocomplete
-
-```
-============================================================
-NEIGHBORHOOD AUTOCOMPLETE BENCHMARK
-============================================================
-
-Loading benchmark samples...
-Loaded 19974 samples from 5570 cities
-
-==================================================
-Test: Full name
-==================================================
-Queries tested: 10000
-Errors: 0
-Avg time per query: 1.7771ms
-Accuracy (expected in top 10): 99.7%
-
-Sample queries:
-  OK 'LINHA 144 SUL' -> expected: LINHA 144 SUL, first: Linha 144 Sul, got 10 results in 1145.51ms
-  OK 'ALDEIA INDIGENA BOM JESUS 2' -> expected: ALDEIA INDIGENA BOM JESUS 2, first: Aldeia Indígena Bom Jesus 2, got 10 results in 34.4ms
-  OK 'ALDEIA INDIGENA BOM SOSSEGO' -> expected: ALDEIA INDIGENA BOM SOSSEGO, first: Aldeia Indígena Bom Sossego, got 10 results in 7.05ms
-  OK 'JARDIM PAULISTA' -> expected: JARDIM PAULISTA, first: Jardim Paulista, got 10 results in 7.05ms
-  OK 'SOL NASCENTE' -> expected: SOL NASCENTE, first: Sol Nascente, got 10 results in 6.62ms
-
-============================================================
-SUMMARY
-============================================================
-Test                 Queries    Avg ms     Accuracy
---------------------------------------------------
-Full name            10000      1.7771     99.7      %
-Abbreviation         9999       0.7514     99.7      %
-Partial              10000      0.5314     95.6      %
-First 2 chars        9984       0.0760     79.2      %
-First 3 chars        9984       0.2278     86.7      %
-
-Overall avg time: 0.6727ms
-Overall avg accuracy: 92.2%
-```
-
-### Street Autocomplete
-
-```
-============================================================
-COMPARING NORMAL vs AUTOCOMPLETE MODE
-============================================================
-
-============================================================
-STREET AUTOCOMPLETE BENCHMARK - NORMAL MODE
-============================================================
-
-============================================================
-SUMMARY
-============================================================
-Test                 Queries    Avg ms     Accuracy
---------------------------------------------------
-Full name            5000       1.5149     100.0     %
-Abbreviation         5000       1.0251     98.7      %
-Partial              5000       0.4992     85.7      %
-First 2 chars        5000       0.3665     10.0      %
-First 3 chars        5000       0.3921     14.0      %
-
-Overall avg time: 0.7596ms
-Overall avg accuracy: 61.7%
-
-============================================================
-STREET AUTOCOMPLETE BENCHMARK - AUTOCOMPLETE MODE
-============================================================
-
-============================================================
-SUMMARY
-============================================================
-Test                 Queries    Avg ms     Accuracy
---------------------------------------------------
-Full name            5000       0.4492     98.1      %
-Abbreviation         5000       0.3325     97.6      %
-Partial              5000       0.2477     82.9      %
-First 2 chars        5000       0.3574     10.0      %
-First 3 chars        5000       0.3361     14.0      %
-
-Overall avg time: 0.3446ms
-Overall avg accuracy: 60.5%
-
-============================================================
-COMPARISON SUMMARY
-============================================================
-Test                 Normal ms    Auto ms      Speedup    Acc Normal   Acc Auto
---------------------------------------------------------------------------------
-Full name            1.5149       0.4492       3.37      x 100.0       % 98.1      %
-Abbreviation         1.0251       0.3325       3.08      x 98.7        % 97.6      %
-Partial              0.4992       0.2477       2.02      x 85.7        % 82.9      %
-First 2 chars        0.3665       0.3574       1.03      x 10.0        % 10.0      %
-First 3 chars        0.3921       0.3361       1.17      x 14.0        % 14.0      %
-
-============================================================
-OVERALL COMPARISON
-============================================================
-Normal mode - Avg time: 0.7596ms, Avg accuracy: 61.7%
-Auto mode  - Avg time: 0.3446ms, Avg accuracy: 60.5%
-Speedup: 2.20x
-```
-
-### Search Streets Full Flow
-
-```
-Tantivy street search benchmark - 10000 random queries (autocomplete mode)
-
-Loading 10000 random queries from D:/projetos/SD-External-Data/Scripts-Scraping/Get-Lat-Long/ibge_cnefe_v2/data/sgeobr.db...
-Loaded 10000 queries
-
-=== Warming up ===
-
-=== Benchmarks ===
-Tantivy only: 10000 queries in 2.35s = 4260 QPS
-Benchmarking Tantivy + get_query_ids + SQL...
-Tantivy only: 10000 queries in 2.38s = 4206 QPS
-Tantivy + get_query_ids + SQL (10000 sample): 10000 queries in 4.18s = 2391 QPS
-Full flow: 10000 queries in 4.52s = 2215 QPS
-
-=== Summary ===
-Tantivy only:        4260 QPS
-get_query_id + SQL:  ~2391 QPS
-Full flow:           2215 QPS
-```
-
-### Geocoder Benchmark
-
-```
-============================================================
-VALIDATION REPORT
-============================================================
-
-Total records:    4000
-Got IBGE result:  3628 (90.7%)
-No IBGE result:   372 (9.3%)
-
-[Performance]
-  Total time:     92.94s
-  QPS:            43.0 queries/s
-  Per query:      23.23ms
-
-[Distance (m)]
-  Mean:   8793.5
-  Median: 67.1
-  Max:    7649569.0
-  <=100m:  1997 (55.0%)
-  <=1km:   2967 (81.8%)
-
-[Text Similarity]
-  Street name:       0.683
-  Neighborhood:      0.723
-  Zip code:          0.723
-```
