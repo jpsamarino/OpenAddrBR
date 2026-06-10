@@ -76,7 +76,16 @@ class LocationSearch:
         limit: int = 10,
         autocomplete_query: bool = False,
     ) -> list[StreetSegmentInfo]:
-
+        """Search for streets by name within a specific city, with optional neighborhood boost.
+        Args:
+            city_code: IBGE city code to filter by.
+            query: Street name to search for.
+            neighborhood: Optional neighborhood name to boost results that match it.
+            limit: Maximum number of distinct streets to return (may return more rows if the same street exists in multiple neighborhoods).
+            autocomplete_query: Whether to treat the query as an autocomplete prefix.
+        Returns:
+            List of StreetSegmentInfo matching the query, sorted by relevance.
+        """
         query_normalized = normalize_text(query)
         if not query_normalized:
             return []
@@ -117,4 +126,4 @@ class LocationSearch:
 
         results_with_scores.sort(key=lambda x: x[1], reverse=True)
 
-        return [seg for seg, score in results_with_scores[:limit]]
+        return [seg for seg, score in results_with_scores]
