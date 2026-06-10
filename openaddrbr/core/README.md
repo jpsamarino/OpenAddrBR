@@ -1,15 +1,42 @@
 # openaddrbr/core — Geocoder & LocationSearch
 
-## 1. Visão Geral
+## Installation
 
-Geocoder + LocationSearch API for Brazilian address geocoding.
+```bash
+# Install from GitHub
+pip install git+https://github.com/jpsamarino/OpenAddrBR.git
 
-- **Geocoder**: address → lat/long coordinates (vector search + IBGE data)
-- **LocationSearch**: fast autocomplete for cities, neighborhoods, streets (Tantivy ngram search)
+# Download data (~10GB) — IBGE census, Receita Federal, street data
+python -m openaddrbr download
+
+# Auto-tune performance (runs benchmark, detects best backend, creates .env)
+python -m openaddrbr setup
+```
+
+Works on Windows, Linux, and Mac. Python 3.12+ required.
 
 ---
 
-## 2. Como Usar
+## 1. Overview
+
+Geocoder + LocationSearch Python library for Brazilian address geocoding using open data (IBGE census, Receita Federal, and other public datasets).
+
+- **Geocoder**: converts address → lat/long coordinates using vector search + IBGE data
+- **LocationSearch**: fast autocomplete for cities, neighborhoods, and streets using Tantivy ngram search
+
+### Architecture
+
+```
+Geocoder:
+  address → CEP check (fast) OR vector search (embedding fallback) → lat/long
+
+LocationSearch:
+  query → Tantivy ngram search → SQL lookup → scoring → results
+```
+
+---
+
+## 2. How to Use
 
 ### 2.1 Geocoder
 
@@ -27,9 +54,9 @@ def geocode(
 ) -> AddressInfo | None
 ```
 
-Converte um endereço brasileiro em coordenadas lat/long. Utiliza busca por CEP quando disponível (mais rápida e precisa), e fallback para busca vetorial (embedding) quando CEP não disponível ou é de multi-ruas.
+Converts a Brazilian address into lat/long coordinates. Uses CEP lookup when available (fast and accurate), falls back to vector search (embedding) when CEP is unavailable or belongs to a multi-street zone.
 
-**Exemplo:**
+**Example:**
 
 ```python
 from openaddrbr.core import Geocoder
@@ -62,9 +89,9 @@ def geocode_batch(
 ) -> list[AddressInfo | None]
 ```
 
-Geocodifica múltiplos endereços em lote. Agrupa endereços por cidade e rua para otimizar o encoding em batch. Mantém a ordem original dos resultados.
+Geocodes multiple addresses in batch. Groups addresses by city and street to optimize batch encoding. Preserves original result order.
 
-**Exemplo:**
+**Example:**
 
 ```python
 from openaddrbr.core import Geocoder
@@ -97,9 +124,9 @@ AddressInfo(lat=-22.9068, long=-43.1729, street_name='Av Brasil', neighborhood='
 def search_cities(self, query: str, limit: int = 10) -> list[CityInfo]
 ```
 
-Busca cidades por nome usando busca ngram do Tantivy. Retorna até `limit` cidades ordenadas por relevância.
+Searches for cities by name using Tantivy ngram search. Returns up to `limit` cities sorted by relevance.
 
-**Exemplo:**
+**Example:**
 
 ```python
 from openaddrbr.core import LocationSearch
@@ -126,9 +153,9 @@ def search_neighborhoods(
 ) -> list[NeighborhoodInfo]
 ```
 
-Busca bairros por nome dentro de uma cidade específica (filtragem por `city_code` do IBGE). Retorna até `limit` bairros ordenados por relevância.
+Searches for neighborhoods by name within a specific city (filtered by IBGE `city_code`). Returns up to `limit` neighborhoods sorted by relevance.
 
-**Exemplo:**
+**Example:**
 
 ```python
 from openaddrbr.core import LocationSearch
@@ -160,9 +187,9 @@ def search_streets(
 ) -> list[StreetSegmentInfo]
 ```
 
-Busca ruas por nome dentro de uma cidade específica. Parâmetro `autocomplete_query=True` otimiza para digitação progressiva (prefixo). Parâmetro `neighborhood` aplica boost de similaridade em resultados que correspondem ao bairro informado.
+Searches for streets by name within a specific city. The `autocomplete_query=True` parameter optimizes for progressive typing (prefix search). The `neighborhood` parameter boosts results matching the specified neighborhood.
 
-**Exemplo:**
+**Example:**
 
 ```python
 from openaddrbr.core import LocationSearch
@@ -189,7 +216,7 @@ StreetSegmentInfo(street_id=123457, street_name='Rua Marcelina', street_normaliz
 
 ---
 
-### 2.3 Modelos de Retorno
+### 2.3 Return Types
 
 #### AddressInfo
 
@@ -198,14 +225,14 @@ StreetSegmentInfo(street_id=123457, street_name='Rua Marcelina', street_normaliz
 class AddressInfo:
     lat: float              # Latitude
     long: float             # Longitude
-    street_name: str        # Nome da rua
-    neighborhood: str       # Nome do bairro
-    city: str               # Nome da cidade
-    state: str              # Sigla do estado
-    zip_code: str           # CEP
-    number: int             # Número do endereço
-    ref_number_lat_long: int  # Flag se lat/long veio do número
-    address: str = ""       # Endereço formatado
+    street_name: str        # Street name
+    neighborhood: str       # Neighborhood name
+    city: str               # City name
+    state: str              # State code
+    zip_code: str           # CEP (postal code)
+    number: int             # Street number
+    ref_number_lat_long: int  # Flag if lat/long came from street number
+    address: str = ""       # Formatted address string
 ```
 
 #### CityInfo
@@ -213,12 +240,12 @@ class AddressInfo:
 ```python
 @dataclass
 class CityInfo:
-    city_code: int          # Código IBGE da cidade
-    city_name: str          # Nome da cidade
-    city_normalized: str    # Nome normalizado (para busca)
-    state_code: str          # Sigla do estado
-    latitude: float          # Latitude do centroide
-    longitude: float         # Longitude do centroide
+    city_code: int          # IBGE city code
+    city_name: str          # City name
+    city_normalized: str    # Normalized name (for search)
+    state_code: str          # State code
+    latitude: float          # Centroid latitude
+    longitude: float         # Centroid longitude
 ```
 
 #### NeighborhoodInfo
@@ -226,11 +253,11 @@ class CityInfo:
 ```python
 @dataclass
 class NeighborhoodInfo:
-    neighborhood_name: str        # Nome do bairro
-    neighborhood_normalized: str  # Nome normalizado
-    city_code: int                # Código IBGE da cidade
-    latitude: float               # Latitude do centroide
-    longitude: float              # Longitude do centroide
+    neighborhood_name: str        # Neighborhood name
+    neighborhood_normalized: str  # Normalized name
+    city_code: int                # IBGE city code
+    latitude: float               # Centroid latitude
+    longitude: float              # Centroid longitude
 ```
 
 #### StreetSegmentInfo
@@ -238,38 +265,38 @@ class NeighborhoodInfo:
 ```python
 @dataclass
 class StreetSegmentInfo:
-    street_id: int                # ID único da rua
-    street_name: str              # Nome da rua
-    street_normalized: str        # Nome normalizado
-    neighborhood_name: str        # Nome do bairro
-    neighborhood_normalized: str  # Bairro normalizado
-    zip_codes: list[str]          # Lista de CEPs
-    latitude: float               # Latitude do centroide
-    longitude: float              # Longitude do centroide
+    street_id: int                # Unique street ID
+    street_name: str              # Street name
+    street_normalized: str        # Normalized name
+    neighborhood_name: str        # Neighborhood name
+    neighborhood_normalized: str  # Normalized neighborhood name
+    zip_codes: list[str]          # List of CEPs
+    latitude: float               # Centroid latitude
+    longitude: float              # Centroid longitude
 ```
 
 ---
 
 ## 3. Roadmap
 
-| Função | Classe | Status | Descrição |
-|--------|--------|--------|-----------|
-| geocode | Geocoder | ✅ | Geocodifica endereço para lat/long |
-| geocode_batch | Geocoder | ✅ | Geocodifica múltiplos endereços em lote |
-| geocode_city | Geocoder | 📋 | Geocodifica apenas pela cidade |
-| geocode_neighborhood | Geocoder | 📋 | Geocodifica por bairro |
-| geocode_street | Geocoder | 📋 | Geocodifica rua sem número |
-| geocode_street_number | Geocoder | 📋 | Geocodifica rua com número específico |
-| reverse_geocode | Geocoder | 📋 | given lat/long → address |
-| get_addresses_in_radius | Geocoder | 📋 | Lista endereços em raio |
-| get_street_numbers | Geocoder | 📋 | Busca números de uma rua |
-| search_cities | LocationSearch | ✅ | Busca cidades por nome |
-| search_neighborhoods | LocationSearch | ✅ | Busca bairros por nome |
-| search_streets | LocationSearch | ✅ | Busca ruas por nome |
-| autocomplete_street | LocationSearch | 📋 | Autocomplete de rua |
-| autocomplete_addresse | LocationSearch | 📋 | Autocomplete de endereço completo |
-| parse_address | LocationSearch | 📋 | Parser de endereço brasileiro |
-| search_cep | LocationSearch | 📋 | Busca por CEP |
+| Function | Class | Status | Description |
+|----------|-------|--------|-------------|
+| geocode | Geocoder | ✅ | Geocode address to lat/long |
+| geocode_batch | Geocoder | ✅ | Batch geocode multiple addresses |
+| geocode_city | Geocoder | 📋 | Geocode by city only |
+| geocode_neighborhood | Geocoder | 📋 | Geocode by neighborhood |
+| geocode_street | Geocoder | 📋 | Geocode street without number |
+| geocode_street_number | Geocoder | 📋 | Geocode street with specific number |
+| reverse_geocode | Geocoder | 📋 | Given lat/long → address |
+| get_addresses_in_radius | Geocoder | 📋 | List addresses in radius |
+| get_street_numbers | Geocoder | 📋 | Search street numbers |
+| search_cities | LocationSearch | ✅ | Search cities by name |
+| search_neighborhoods | LocationSearch | ✅ | Search neighborhoods by name |
+| search_streets | LocationSearch | ✅ | Search streets by name |
+| autocomplete_street | LocationSearch | 📋 | Street autocomplete |
+| autocomplete_addresse | LocationSearch | 📋 | Full address autocomplete |
+| parse_address | LocationSearch | 📋 | Brazilian address parser |
+| search_cep | LocationSearch | 📋 | Search by CEP |
 
 ---
 
@@ -277,28 +304,28 @@ class StreetSegmentInfo:
 
 ### 4.1 Geocoder
 
-| Métrica | Valor |
-|---------|-------|
-| QPS (queries por segundo) | 43.0 |
-| Tempo por query | 23.23ms |
-| Acurácia (IBGE result) | 90.7% |
-| Endereços <=100m | 55.0% |
-| Endereços <=1km | 81.8% |
+| Metric | Value |
+|--------|-------|
+| QPS (queries per second) | 43.0 |
+| Time per query | 23.23ms |
+| Match rate (IBGE result) | 90.7% |
+| Addresses <=100m | 55.0% |
+| Addresses <=1km | 81.8% |
 
-**O que afeta a performance:**
+**What affects performance:**
 
-1. **CEP disponível (mais rápido)**: Quando o CEP é de rua única (`is_multi_street_cep`), a busca usa o CEP diretamente, sem necessidade de vector search.
-2. **Fallback vector search**: Quando não há CEP ou é multi-rua, o sistema faz embedding da rua + busca no índice vetorial (usearch). Este é o caminho mais lento.
-3. **Batch size**: O `geocode_batch` agrupa endereços por cidade/rua para otimizar o encoding em lote.
+1. **CEP available (fastest)**: When CEP belongs to a single-street zone (`is_multi_street_cep` returns false), lookup uses CEP directly — no vector search needed.
+2. **Vector search fallback (slower)**: When no CEP is provided or it's a multi-street CEP, the system embeds the street name and searches the vector index (usearch). This is the slower path.
+3. **Batch size**: `geocode_batch` groups addresses by city/street to optimize batch encoding.
 
 ### 4.2 LocationSearch
 
-A busca no LocationSearch segue o fluxo: **Tantivy search → SQL lookup → scoring**.
+LocationSearch follows this flow: **Tantivy search → SQL lookup → scoring**.
 
 #### search_cities
 
-| Teste | Queries | Avg ms | Acurácia |
-|-------|---------|--------|----------|
+| Test | Queries | Avg ms | Accuracy |
+|------|---------|--------|----------|
 | Full name | 100 | 2.29 | 100.0% |
 | Abbreviation | 100 | 0.10 | 74.0% |
 | Partial | 100 | 0.09 | 34.0% |
@@ -309,8 +336,8 @@ A busca no LocationSearch segue o fluxo: **Tantivy search → SQL lookup → sco
 
 #### search_neighborhoods
 
-| Teste | Queries | Avg ms | Acurácia |
-|-------|---------|--------|----------|
+| Test | Queries | Avg ms | Accuracy |
+|------|---------|--------|----------|
 | Full name | 10000 | 1.7771 | 99.7% |
 | Abbreviation | 9999 | 0.7514 | 99.7% |
 | Partial | 10000 | 0.5314 | 95.6% |
@@ -321,8 +348,8 @@ A busca no LocationSearch segue o fluxo: **Tantivy search → SQL lookup → sco
 
 #### search_streets
 
-| Teste | Normal ms | Auto ms | Speedup | Acc Normal | Acc Auto |
-|-------|-----------|---------|---------|------------|---------|
+| Test | Normal ms | Auto ms | Speedup | Acc Normal | Acc Auto |
+|------|-----------|---------|---------|------------|----------|
 | Full name | 1.5149 | 0.4492 | 3.37x | 100.0% | 98.1% |
 | Abbreviation | 1.0251 | 0.3325 | 3.08x | 98.7% | 97.6% |
 | Partial | 0.4992 | 0.2477 | 2.02x | 85.7% | 82.9% |
@@ -333,26 +360,26 @@ A busca no LocationSearch segue o fluxo: **Tantivy search → SQL lookup → sco
 **Auto mode - Avg time: 0.3446ms, Avg accuracy: 60.5%**
 **Speedup: 2.20x**
 
-O modo `autocomplete_query=True` é **2.2x mais rápido** que o modo normal, com acurácia similar. Use para digitação progressiva.
+`autocomplete_query=True` is **2.2x faster** than normal mode with similar accuracy. Use for progressive typing.
 
-**Fluxo completo (Tantivy + SQL + scoring):**
+**Full flow breakdown (Tantivy + SQL + scoring):**
 
-| Etapa | QPS |
+| Stage | QPS |
 |-------|-----|
 | Tantivy only | 4260 |
 | get_query_id + SQL | 2391 |
 | Full flow | 2215 |
 
-### 4.3 Comparativo Geral
+### 4.3 General Comparison
 
-| Função | Avg ms | Notas |
-|--------|--------|-------|
-| search_cities (abbreviation) | 0.10 | Mais rápido |
-| search_neighborhoods (first 2 chars) | 0.08 | Muito rápido |
-| search_streets (autocomplete) | 0.34 | Boa velocidade |
-| search_cities (full name) | 2.29 | Ligeiramente mais lento |
-| search_neighborhoods (full name) | 1.78 | Medio |
-| geocode (single) | 23.23 | Mais lento (vector search) |
+| Function | Avg ms | Notes |
+|----------|--------|-------|
+| search_cities (abbreviation) | 0.10 | Fastest |
+| search_neighborhoods (first 2 chars) | 0.08 | Very fast |
+| search_streets (autocomplete) | 0.34 | Good speed |
+| search_cities (full name) | 2.29 | Slightly slower |
+| search_neighborhoods (full name) | 1.78 | Medium |
+| geocode (single) | 23.23 | Slowest (vector search) |
 
 ---
 
@@ -523,7 +550,7 @@ get_query_id + SQL:  ~2391 QPS
 Full flow:           2215 QPS
 ```
 
-### Geocoder API Comparison
+### Geocoder Benchmark
 
 ```
 ============================================================
