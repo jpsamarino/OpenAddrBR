@@ -129,3 +129,43 @@ class LocationSearch:
         results_with_scores.sort(key=lambda x: x[1], reverse=True)
 
         return [seg for seg, score in results_with_scores]
+
+    def autocomplete_street(
+        self,
+        city_code: int,
+        query: str,
+        limit: int = 10,
+    ) -> list[str]:
+        """Ultra-fast street name autocomplete using only Tantivy index.
+
+        Args:
+            city_code: IBGE city code to filter by.
+            query: Street name prefix/partial query.
+            limit: Maximum number of results to return.
+
+        Returns:
+            List of unique street names matching the query, ordered by relevance.
+            No SQLite lookup - pure Tantivy-only for maximum speed.
+        """
+        query_normalized = normalize_text(query)
+        if not query_normalized:
+            return []
+
+        hits = self._engine.search_streets(
+            query_normalized, city_code, limit=limit, autocomplete_query=True
+        )
+        if not hits:
+            return []
+
+        doc_addresses = [hit.doc_address for hit in hits]
+        names = self._engine.get_street_names_batch(doc_addresses)
+
+        # Filter empty strings and deduplicate while preserving order
+        seen: set[str] = set()
+        unique_names: list[str] = []
+        for name in names:
+            if name and name not in seen:
+                seen.add(name)
+                unique_names.append(name)
+
+        return unique_names[:limit]
