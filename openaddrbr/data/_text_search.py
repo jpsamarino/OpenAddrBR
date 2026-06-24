@@ -267,6 +267,30 @@ class TextSearchEngine(TextIndexSearcher):
 
         return results
 
+    def get_street_names_batch(self, doc_addresses: list[int]) -> list[str]:
+        """Get street names for multiple doc addresses from the street index.
+
+        Args:
+            doc_addresses: List of Tantivy doc addresses from search_streets results.
+
+        Returns:
+            List of street name strings (may contain empty strings for invalid addresses).
+        """
+        if not doc_addresses:
+            return []
+
+        searcher = self._get_street_searcher()
+        results: list[str] = []
+        for addr in doc_addresses:
+            try:
+                doc = searcher.doc(addr)
+                name = doc.get_first("street_name")
+                results.append(name if name else "")
+            except Exception:
+                results.append("")
+
+        return results
+
     def get_neighborhoods_batch(self, doc_addresses: list[int]) -> list[NeighborhoodInfo | None]:
         """Get neighborhoods for multiple doc addresses using a single searcher.
 
