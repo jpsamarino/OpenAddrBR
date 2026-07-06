@@ -1,20 +1,19 @@
 import json
 import math
-from typing import Dict, Any
 from openaddrbr.core.models._models import TokenStats, CutHypothesis
 
 class AddressCutter:
     def __init__(self, json_path: str, alpha: float = 1.0):
-        self.stats: Dict[str, Dict[str, Dict[str, TokenStats]]] = {}
-        self.weights: Dict[str, float] = {}
+        self.stats: dict[str, dict[str, dict[str, TokenStats]]] = {}
+        self.weights: dict[str, float] = {}
         
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             
         raw_tokens = data.get("tokens", {})
         
-        total_global: Dict[str, Dict[str, int]] = {}
-        total_token: Dict[str, int] = {}
+        total_global: dict[str, dict[str, int]] = {}
+        total_token: dict[str, int] = {}
         
         for token, roles in raw_tokens.items():
             token_count = 0
@@ -27,6 +26,8 @@ class AddressCutter:
                     total_global[role][pos] = total_global[role].get(pos, 0) + qt_entities
             total_token[token] = token_count
             
+        role_totals: dict[str, int] = {role: sum(pos_counts.values()) for role, pos_counts in total_global.items()}
+            
         for token, roles in raw_tokens.items():
             self.weights[token] = math.log(total_token[token] + 1)
             self.stats[token] = {}
@@ -34,10 +35,11 @@ class AddressCutter:
                 self.stats[token][role] = {}
                 num_positions = len(total_global.get(role, {}))
                 
+                token_role_total = sum(p["qt_entities"] for p in positions.values())
+                role_total = role_totals.get(role, 0)
+                
                 for pos, stats in positions.items():
                     qt_entities = stats["qt_entities"]
-                    role_total = sum(total_global[role].values())
-                    token_role_total = sum(p["qt_entities"] for p in roles[role].values())
                     p_pos_given_token = (qt_entities + alpha) / (token_role_total + alpha * num_positions)
                     p_media = total_global[role][pos] / role_total if role_total > 0 else 1e-5
                     llr = math.log(p_pos_given_token / p_media)
