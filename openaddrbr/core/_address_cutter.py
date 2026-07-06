@@ -1,6 +1,7 @@
 import json
 import math
 from openaddrbr.core.models._models import TokenStats, CutHypothesis
+from openaddrbr.utils._text import normalize_text
 
 class AddressCutter:
     def __init__(self, json_path: str, alpha: float = 1.0):
@@ -74,4 +75,50 @@ class AddressCutter:
             score += (llr * weight) + gaussian_penalty
             
         return score
+
+    def cut(self, query: str) -> list[CutHypothesis]:
+        if not query:
+            return []
+            
+        hypotheses = []
+        
+        # 1. Hard Cut by Comma
+        if ',' in query:
+            parts = query.split(',', 1)
+            street_str = normalize_text(parts[0])
+            rest_str = normalize_text(parts[1])
+            street_tokens = street_str.split()
+            rest_tokens = rest_str.split()
+            score = self._calculate_score(street_tokens)
+            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
+            return hypotheses
+            
+        norm_query = normalize_text(query)
+        tokens = norm_query.split()
+        if not tokens:
+            return []
+            
+        # 2. Anchor by Number
+        anchor_idx = -1
+        for i, token in enumerate(tokens):
+            if any(char.isdigit() for char in token):
+                anchor_idx = i
+                break
+                
+        if anchor_idx != -1:
+            street_tokens = tokens[:anchor_idx]
+            rest_tokens = tokens[anchor_idx+1:]
+            score = self._calculate_score(street_tokens)
+            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
+            return hypotheses
+            
+        # 3. Statistical Sliding (no comma, no number)
+        for i in range(1, len(tokens) + 1):
+            street_tokens = tokens[:i]
+            rest_tokens = tokens[i:]
+            score = self._calculate_score(street_tokens)
+            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
+            
+        hypotheses.sort(key=lambda h: h.score, reverse=True)
+        return hypotheses
 

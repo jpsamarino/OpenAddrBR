@@ -27,9 +27,6 @@ def test_address_cutter_initialization():
         os.unlink(json_path)
 
 def test_calculate_score():
-    import json, os, tempfile
-    from openaddrbr.core._address_cutter import AddressCutter
-
     dummy_data = {
         "tokens": {
             "RUA": { "street": { "start": {"qt_entities": 100, "qt_addresses": 50, "mean": 3.0, "std": 1.0} } },
@@ -46,3 +43,34 @@ def test_calculate_score():
     finally:
         os.unlink(json_path)
 
+def test_cut_method():
+    dummy_data = {
+        "tokens": {
+            "RUA": { "street": { "start": {"qt_entities": 100, "qt_addresses": 50, "mean": 3.0, "std": 1.0} } },
+            "COSTA": { "street": { "end": {"qt_entities": 50, "qt_addresses": 50, "mean": 3.0, "std": 0.0} } }
+        }
+    }
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.json', mode='w', encoding='utf-8') as f:
+        json.dump(dummy_data, f)
+        json_path = f.name
+    try:
+        cutter = AddressCutter(json_path)
+        
+        # Test 1: Hard Cut by Comma
+        cuts = cutter.cut("RUA HORTA COSTA, ALV")
+        assert len(cuts) == 1
+        assert cuts[0].street_part == "RUA HORTA COSTA"
+        assert cuts[0].rest_part == "ALV"
+        
+        # Test 2: Anchor by Number
+        cuts = cutter.cut("RUA HORTA COSTA 123 ALV")
+        assert len(cuts) == 1
+        assert cuts[0].street_part == "RUA HORTA COSTA"
+        assert cuts[0].rest_part == "ALV"
+        
+        # Test 3: Statistical sliding
+        cuts = cutter.cut("RUA HORTA COSTA ALV")
+        assert len(cuts) > 1
+        assert cuts[0].street_part == "RUA HORTA COSTA"
+    finally:
+        os.unlink(json_path)
