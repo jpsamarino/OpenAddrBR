@@ -130,3 +130,15 @@ class NormalizedAddress(NamedTuple):
     neighborhood_norm: str
     zip_code: str | None
     number: int
+
+
+class TokenStats(NamedTuple):
+    llr: float
+    mean: float
+    std: float
+
+
+class CutHypothesis(NamedTuple):
+    street_part: str
+    rest_part: str
+    score: float
