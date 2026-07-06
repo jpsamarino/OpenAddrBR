@@ -45,3 +45,33 @@ class AddressCutter:
                     llr = math.log(p_pos_given_token / p_media)
                     std = max(stats["std"], 0.5)
                     self.stats[token][role][pos] = TokenStats(llr=llr, mean=stats["mean"], std=std)
+
+    def _calculate_score(self, street_tokens: list[str]) -> float:
+        score = 0.0
+        L = len(street_tokens)
+        if L == 0:
+            return score
+            
+        for i, token in enumerate(street_tokens):
+            if L == 1:
+                pos = "single"
+            elif i == 0:
+                pos = "start"
+            elif i == L - 1:
+                pos = "end"
+            else:
+                pos = "middle"
+                
+            token_stats = self.stats.get(token, {}).get("street", {}).get(pos)
+            if not token_stats:
+                continue
+                
+            llr = token_stats.llr
+            weight = self.weights.get(token, 0.0)
+            mean = token_stats.mean
+            std = token_stats.std
+            gaussian_penalty = - ((L - mean) ** 2) / (2 * (std ** 2))
+            score += (llr * weight) + gaussian_penalty
+            
+        return score
+
