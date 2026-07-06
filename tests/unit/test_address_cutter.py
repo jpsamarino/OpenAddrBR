@@ -57,20 +57,15 @@ def test_cut_method():
         cutter = AddressCutter(json_path)
         
         # Test 1: Hard Cut by Comma
-        cuts = cutter.cut("RUA HORTA COSTA, ALV")
+        cuts = cutter.cut("RUA HORTA COSTA, 123 ALV")
         assert len(cuts) == 1
         assert cuts[0].street_part == "RUA HORTA COSTA"
-        assert cuts[0].rest_part == "ALV"
+        assert cuts[0].rest_part == "123 ALV"
         
-        # Test 2: Anchor by Number
+        # Test 2: Statistical sliding - Numbers evaluated by probability
         cuts = cutter.cut("RUA HORTA COSTA 123 ALV")
-        assert len(cuts) == 1
-        assert cuts[0].street_part == "RUA HORTA COSTA"
-        assert cuts[0].rest_part == "ALV"
-        
-        # Test 3: Statistical sliding
-        cuts = cutter.cut("RUA HORTA COSTA ALV")
         assert len(cuts) > 1
         assert cuts[0].street_part == "RUA HORTA COSTA"
+        assert cuts[0].rest_part == "123 ALV"
     finally:
         os.unlink(json_path)

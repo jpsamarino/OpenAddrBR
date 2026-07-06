@@ -98,21 +98,7 @@ class AddressCutter:
         if not tokens:
             return []
             
-        # 2. Anchor by Number
-        anchor_idx = -1
-        for i, token in enumerate(tokens):
-            if any(char.isdigit() for char in token):
-                anchor_idx = i
-                break
-                
-        if anchor_idx != -1:
-            street_tokens = tokens[:anchor_idx]
-            rest_tokens = tokens[anchor_idx+1:]
-            score = self._calculate_score(street_tokens)
-            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
-            return hypotheses
-            
-        # 3. Statistical Sliding (no comma, no number)
+        # 2. Statistical Sliding (no comma)
         for i in range(1, len(tokens) + 1):
             street_tokens = tokens[:i]
             rest_tokens = tokens[i:]
