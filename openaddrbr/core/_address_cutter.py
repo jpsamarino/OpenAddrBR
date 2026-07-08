@@ -45,7 +45,7 @@ class AddressCutter:
                     p_media = total_global[role][pos] / role_total if role_total > 0 else 1e-5
                     llr = math.log(p_pos_given_token / p_media)
                     std = max(stats["std"], 0.5)
-                    self.stats[token][role][pos] = TokenStats(llr=llr, mean=stats["mean"], std=std)
+                    self.stats[token][role][pos] = TokenStats(llr=llr, mean=stats["mean"], std=std, qt_entities=qt_entities)
 
     def _calculate_score(self, street_tokens: list[str]) -> float:
         score = 0.0
@@ -81,7 +81,8 @@ class AddressCutter:
             
             # House Number Rule: In Brazil, if a street has > 2 words and ends in a bare number, it's a house number.
             if pos == "end" and L > 2 and token.isdigit():
-                token_score -= 20.0
+                qt = token_stats.qt_entities
+                token_score -= 20.0 / (1.0 + math.log(qt + 1))
                 
             score += token_score
             
