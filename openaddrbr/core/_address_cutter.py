@@ -64,15 +64,26 @@ class AddressCutter:
                 pos = "middle"
                 
             token_stats = self.stats.get(token, {}).get("street", {}).get(pos)
+            weight = self.weights.get(token, 0.0)
+            
             if not token_stats:
+                # OOV Penalty: Harsh wall to prevent absorbing unknown neighborhood words into the middle of the street.
+                score -= 15.0
                 continue
                 
             llr = token_stats.llr
-            weight = self.weights.get(token, 0.0)
             mean = token_stats.mean
             std = token_stats.std
             gaussian_penalty = - ((L - mean) ** 2) / (2 * (std ** 2))
-            score += (llr * weight) + gaussian_penalty
+            
+            # Limiting negative LLR penalty for valid abbreviations
+            token_score = max((llr * weight), -5.0) + gaussian_penalty
+            
+            # House Number Rule: In Brazil, if a street has > 2 words and ends in a bare number, it's a house number.
+            if pos == "end" and L > 2 and token.isdigit():
+                token_score -= 20.0
+                
+            score += token_score
             
         return score
 
@@ -98,13 +109,30 @@ class AddressCutter:
         if not tokens:
             return []
             
-        # 2. Statistical Sliding (no comma)
+        # 2. Statistical Sliding (Probabilistic evaluation of everything else)
         for i in range(1, len(tokens) + 1):
             street_tokens = tokens[:i]
             rest_tokens = tokens[i:]
             score = self._calculate_score(street_tokens)
+            
+            # Transition Bonus
+            if rest_tokens:
+                transition_token = rest_tokens[0]
+                t_weight = self.weights.get(transition_token, 0.0)
+                if any(c.isdigit() for c in transition_token):
+                    score += 15.0
+                else:
+                    best_t_score = 0.0
+                    for role in ["neighborhood", "city"]:
+                        for pos in ["start", "single"]:
+                            t_stats = self.stats.get(transition_token, {}).get(role, {}).get(pos)
+                            if t_stats:
+                                t_score = t_stats.llr * t_weight
+                                if t_score > best_t_score:
+                                    best_t_score = t_score
+                    score += best_t_score
+                    
             hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
             
         hypotheses.sort(key=lambda h: h.score, reverse=True)
         return hypotheses
-
