@@ -122,7 +122,7 @@ class AddressCutter:
                     p_token = (qt + alpha) / (token_role_total + alpha * num_pos)
                     p_corpus = global_counts[r][p] / rt if rt > 0 else 1e-5
                     llr = math.log(p_token / p_corpus)
-                    std = max(stats["std"], 0.5)
+                    std = max(stats["std"], 3.5) if qt < 5 else max(stats["std"], 0.5)
                     self.stats[AddressKey(token, r, p)] = TokenStats(
                         llr=llr,
                         mean=stats["mean"],
@@ -142,6 +142,8 @@ class AddressCutter:
             pos = self.token_position(i - start, L)
 
             ts = self.stats.get((token, Role.STREET, pos))
+            if not ts and pos == Pos.SINGLE:
+                ts = self.stats.get((token, Role.STREET, Pos.END))
             if not ts:
                 score += self.oov_penalty
                 continue
@@ -190,6 +192,8 @@ class AddressCutter:
             for role in self._TRANSITION_ROLES:
                 for p in check:
                     ts = self.stats.get((token, role, p))
+                    if not ts and p == Pos.SINGLE:
+                        ts = self.stats.get((token, role, Pos.END))
                     if ts:
                         s = ts.llr * weight
                         if s > best:
