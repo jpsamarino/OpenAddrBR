@@ -126,20 +126,42 @@ class AddressCutter:
 
             # Transition Bonus
             if rest_tokens:
-                transition_token = rest_tokens[0]
-                t_weight = self.weights.get(transition_token, 0.0)
-                if any(c.isdigit() for c in transition_token):
+                # Se o primeiro token for numero, eh um corte muito confiavel (House Number)
+                if any(c.isdigit() for c in rest_tokens[0]):
                     score += 15.0
                 else:
-                    best_t_score = 0.0
-                    for role in ["neighborhood", "city"]:
-                        for pos in ["start", "single"]:
-                            t_stats = self.stats.get(transition_token, {}).get(role, {}).get(pos)
-                            if t_stats:
-                                t_score = t_stats.llr * t_weight
-                                if t_score > best_t_score:
-                                    best_t_score = t_score
-                    score += best_t_score
+                    total_t_score = 0.0
+                    for r_idx, r_token in enumerate(rest_tokens):
+                        r_weight = self.weights.get(r_token, 0.0)
+                        best_r_score = 0.0
+                        
+                        # Define posicoes validas para buscar no JSON baseadas no tamanho do resto
+                        if len(rest_tokens) == 1:
+                            valid_pos = ["single", "start"]
+                        elif r_idx == 0:
+                            valid_pos = ["start", "single"]
+                        elif r_idx == len(rest_tokens) - 1:
+                            valid_pos = ["end", "middle"]
+                        else:
+                            valid_pos = ["middle"]
+                            
+                        for role in ["neighborhood", "city"]:
+                            for pos in valid_pos:
+                                r_stats = self.stats.get(r_token, {}).get(role, {}).get(pos)
+                                if r_stats:
+                                    r_score = r_stats.llr * r_weight
+                                    if r_score > best_r_score:
+                                        best_r_score = r_score
+                        total_t_score += best_r_score
+                        
+                    avg_t_score = total_t_score / len(rest_tokens)
+                    
+                    # Se nao ha NENHUM numero na query inteira, o risco de corte precoce eh gigante
+                    has_any_digit = any(any(c.isdigit() for c in t) for t in tokens)
+                    if not has_any_digit:
+                        avg_t_score *= 0.2
+                        
+                    score += avg_t_score
 
             hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
 
