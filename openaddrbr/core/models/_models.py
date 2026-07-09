@@ -136,6 +136,7 @@ class TokenStats(NamedTuple):
     llr: float
     mean: float
     std: float
+    qt_entities: int
 
 
 class CutHypothesis(NamedTuple):
