@@ -1,169 +1,246 @@
+"""AddressCutter: Positional Naive Bayes street name boundary detector.
+
+Scores every possible split point in a query string to find where the street
+name ends and the rest (house number, neighborhood, city) begins.
+
+Scoring Model
+─────────────
+For each candidate split, two scores are combined:
+
+  score(split) = street_score(tokens[:i]) + transition_score(tokens[i:])
+
+Street score is the sum of per-token scores using Positional Naive Bayes:
+
+  token_score = max(LLR × weight, LLR_FLOOR) + gaussian_penalty
+  gaussian_penalty = -(L - μ)² / (2σ²)
+
+  where L     = number of tokens in the street hypothesis
+        μ, σ  = mean/std of street length when this token appears at this position
+        LLR   = log(P(pos|token) / P(pos|corpus))  — log-likelihood ratio
+        weight = log(total_frequency + 1)            — global token importance
+
+Special rules applied per-token:
+  • OOV (out-of-vocabulary):     flat penalty (default -10.0)
+  • House number (trailing digit): HOUSE_NUMBER_BASE / (1 + log(qt_entities + 1))
+    — progressively lighter for digits that genuinely belong to street names
+
+Transition score evaluates the rest tokens as neighborhood/city candidates:
+  • If rest starts with a digit → +HOUSE_NUMBER_BONUS (high-confidence boundary)
+  • Otherwise → average best LLR×weight across all rest tokens as neigh/city,
+    dampened by ×NO_DIGIT_DAMPING when the query contains no digits (street-only typing)
+"""
+
 import json
 import math
 
-from openaddrbr.core.models._models import CutHypothesis, TokenStats
+from openaddrbr.core.models._models import CutHypothesis, Pos, Role, TokenProfile, TokenStats
 from openaddrbr.utils._text import normalize_text
 
 
 class AddressCutter:
-    def __init__(self, json_path: str, alpha: float = 1.0):
-        self.stats: dict[str, dict[str, dict[str, TokenStats]]] = {}
-        self.weights: dict[str, float] = {}
+    _ROLE_KEYS = ("street", "neighborhood", "city")
+    _POS_LOOKUP = {"start": Pos.START, "middle": Pos.MIDDLE, "end": Pos.END, "single": Pos.SINGLE}
+    _TRANSITION_ROLES = (Role.NEIGHBORHOOD, Role.CITY)
+
+    @staticmethod
+    def gaussian_penalty(L: int, mean: float, std: float) -> float:
+        """Penalizes street length hypotheses that deviate from the token's typical street length."""
+        return -((L - mean) ** 2) / (2 * std**2)
+
+    @staticmethod
+    def house_number_penalty(qt_entities: int, base: float) -> float:
+        """Progressive penalty: common street-ending digits (e.g. '2') get almost no penalty,
+        rare ones (e.g. '1200') get penalized heavily."""
+        return base / (1.0 + math.log(qt_entities + 1))
+
+    @staticmethod
+    def token_position(index: int, length: int) -> int:
+        """Maps a token's index within a sequence to its positional enum (int)."""
+        if length == 1:
+            return Pos.SINGLE
+        if index == 0:
+            return Pos.START
+        if index == length - 1:
+            return Pos.END
+        return Pos.MIDDLE
+
+    def __init__(
+        self,
+        json_path: str,
+        alpha: float = 1.0,
+        *,
+        oov_penalty: float = -10.0,
+        llr_floor: float = -3.0,
+        house_number_base: float = -20.0,
+        house_number_bonus: float = 15.0,
+        no_digit_damping: float = 0.2,
+    ):
+        # Tunable scoring constants — override via __init__ or mutate on instance
+        self.oov_penalty = oov_penalty
+        self.llr_floor = llr_floor
+        self.house_number_base = house_number_base
+        self.house_number_bonus = house_number_bonus
+        self.no_digit_damping = no_digit_damping
 
         with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+            raw_tokens = json.load(f).get("tokens", {})
 
-        raw_tokens = data.get("tokens", {})
-
-        total_global: dict[str, dict[str, int]] = {}
-        total_token: dict[str, int] = {}
+        # Pass 1: Corpus-wide totals for LLR denominators.
+        global_counts = [[0] * len(Pos) for _ in range(len(Role))]
+        token_totals: dict[str, int] = {}
 
         for token, roles in raw_tokens.items():
             token_count = 0
-            for role, positions in roles.items():
-                if role not in total_global:
-                    total_global[role] = {}
-                for pos, stats in positions.items():
-                    qt_entities = stats["qt_entities"]
-                    token_count += qt_entities
-                    total_global[role][pos] = total_global[role].get(pos, 0) + qt_entities
-            total_token[token] = token_count
+            for r, role_key in enumerate(self._ROLE_KEYS):
+                for pos_str, stats in roles.get(role_key, {}).items():
+                    qt = stats["qt_entities"]
+                    token_count += qt
+                    global_counts[r][self._POS_LOOKUP[pos_str]] += qt
+            token_totals[token] = token_count
 
-        role_totals: dict[str, int] = {
-            role: sum(pos_counts.values()) for role, pos_counts in total_global.items()
-        }
+        role_totals = [sum(rc) for rc in global_counts]
+
+        # Pass 2: Build TokenProfile for each token.
+        self.stats: dict[str, TokenProfile] = {}
 
         for token, roles in raw_tokens.items():
-            self.weights[token] = math.log(total_token[token] + 1)
-            self.stats[token] = {}
-            for role, positions in roles.items():
-                self.stats[token][role] = {}
-                num_positions = len(total_global.get(role, {}))
+            role_slots: list[tuple | None] = [None] * len(Role)
 
+            for r, role_key in enumerate(self._ROLE_KEYS):
+                positions = roles.get(role_key)
+                if not positions:
+                    continue
+
+                num_pos = sum(1 for p in global_counts[r] if p > 0)
                 token_role_total = sum(p["qt_entities"] for p in positions.values())
-                role_total = role_totals.get(role, 0)
+                rt = role_totals[r]
 
-                for pos, stats in positions.items():
-                    qt_entities = stats["qt_entities"]
-                    p_pos_given_token = (qt_entities + alpha) / (
-                        token_role_total + alpha * num_positions
+                pos_slots: list[TokenStats | None] = [None] * len(Pos)
+                for pos_str, stats in positions.items():
+                    p = self._POS_LOOKUP[pos_str]
+                    qt = stats["qt_entities"]
+                    p_token = (qt + alpha) / (token_role_total + alpha * num_pos)
+                    p_corpus = global_counts[r][p] / rt if rt > 0 else 1e-5
+                    pos_slots[p] = TokenStats(
+                        llr=math.log(p_token / p_corpus),
+                        mean=stats["mean"],
+                        std=max(stats["std"], 0.5),
+                        qt_entities=qt,
                     )
-                    p_media = total_global[role][pos] / role_total if role_total > 0 else 1e-5
-                    llr = math.log(p_pos_given_token / p_media)
-                    std = max(stats["std"], 0.5)
-                    self.stats[token][role][pos] = TokenStats(
-                        llr=llr, mean=stats["mean"], std=std, qt_entities=qt_entities
-                    )
+                role_slots[r] = tuple(pos_slots)
 
-    def _calculate_score(self, street_tokens: list[str]) -> float:
-        score = 0.0
-        L = len(street_tokens)
+            self.stats[token] = TokenProfile(
+                weight=math.log(token_totals[token] + 1),
+                roles=(role_slots[0], role_slots[1], role_slots[2]),
+            )
+
+    def _score_street(self, tokens: list[str], start: int, end: int) -> float:
+        """Positional Naive Bayes score for a street name hypothesis."""
+        L = end - start
         if L == 0:
-            return score
+            return 0.0
 
-        for i, token in enumerate(street_tokens):
-            if L == 1:
-                pos = "single"
-            elif i == 0:
-                pos = "start"
-            elif i == L - 1:
-                pos = "end"
-            else:
-                pos = "middle"
+        score = 0.0
+        for i in range(start, end):
+            token = tokens[i]
+            pos = self.token_position(i - start, L)
 
-            token_stats = self.stats.get(token, {}).get("street", {}).get(pos)
-            weight = self.weights.get(token, 0.0)
+            profile = self.stats.get(token)
+            street_slots = profile.roles[Role.STREET] if profile else None
+            ts = street_slots[pos] if street_slots else None
 
-            if not token_stats:
-                # OOV Penalty: Harsh wall to prevent absorbing unknown neighborhood words into the middle of the street.
-                score -= 10.0
+            if not ts:
+                score += self.oov_penalty
                 continue
 
-            llr = token_stats.llr
-            mean = token_stats.mean
-            std = token_stats.std
-            gaussian_penalty = -((L - mean) ** 2) / (2 * (std**2))
+            gaussian = self.gaussian_penalty(L, ts.mean, ts.std)
+            token_score = max(ts.llr * profile.weight, self.llr_floor) + gaussian
 
-            # Limiting negative LLR penalty for valid abbreviations
-            token_score = max((llr * weight), -3.0) + gaussian_penalty
-
-            # House Number Rule: In Brazil, if a street ends in a bare number, it's often a house number.
-            if pos == "end" and token.isdigit():
-                qt = token_stats.qt_entities
-                token_score -= 20.0 / (1.0 + math.log(qt + 1))
+            if pos == Pos.END and token.isdigit():
+                token_score += self.house_number_penalty(ts.qt_entities, self.house_number_base)
 
             score += token_score
 
         return score
 
+    def _score_transition(
+        self, tokens: list[str], start: int, end: int, has_any_digit: bool
+    ) -> float:
+        """Bilateral evaluation of rest tokens as neighborhood/city candidates."""
+        R = end - start
+        if R == 0:
+            return 0.0
+
+        if any(c.isdigit() for c in tokens[start]):
+            return self.house_number_bonus
+
+        total = 0.0
+        for i in range(start, end):
+            profile = self.stats.get(tokens[i])
+            if not profile:
+                continue
+
+            pos = self.token_position(i - start, R)
+            check = (pos,)
+            if pos == Pos.SINGLE:
+                check = (Pos.SINGLE, Pos.START)
+            elif pos == Pos.START:
+                check = (Pos.START, Pos.SINGLE)
+            elif pos == Pos.END:
+                check = (Pos.END, Pos.MIDDLE)
+
+            best = 0.0
+            for role in self._TRANSITION_ROLES:
+                role_slots = profile.roles[role]
+                if not role_slots:
+                    continue
+                for p in check:
+                    ts = role_slots[p]
+                    if ts:
+                        s = ts.llr * profile.weight
+                        if s > best:
+                            best = s
+            total += best
+
+        avg = total / R
+        if not has_any_digit:
+            avg *= self.no_digit_damping
+        return avg
+
     def cut(self, query: str) -> list[CutHypothesis]:
+        """Return all possible street/rest splits, ranked by score (best first)."""
         if not query:
             return []
 
-        hypotheses = []
+        has_digit = any(c.isdigit() for c in query)
 
-        # 1. Hard Cut by Comma
+        # Hard cut: commas are explicit delimiters
         if "," in query:
-            parts = query.split(",", 1)
-            street_str = normalize_text(parts[0])
-            rest_str = normalize_text(parts[1])
-            street_tokens = street_str.split()
-            rest_tokens = rest_str.split()
-            score = self._calculate_score(street_tokens)
-            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
-            return hypotheses
+            street, rest = (normalize_text(p) for p in query.split(",", 1))
+            s_tok, r_tok = street.split(), rest.split()
+            all_tok = s_tok + r_tok
+            split = len(s_tok)
+            score = self._score_street(all_tok, 0, split) + self._score_transition(
+                all_tok, split, len(all_tok), has_digit
+            )
+            return [CutHypothesis(street, rest, score)]
 
         norm_query = normalize_text(query)
         tokens = norm_query.split()
-        if not tokens:
+        N = len(tokens)
+        if N == 0:
             return []
 
-        # 2. Statistical Sliding (Probabilistic evaluation of everything else)
-        for i in range(1, len(tokens) + 1):
-            street_tokens = tokens[:i]
-            rest_tokens = tokens[i:]
-            score = self._calculate_score(street_tokens)
+        # Sliding window — score using indices, materialize strings after sorting
+        scored: list[tuple[int, float]] = []
+        for i in range(1, N + 1):
+            score = self._score_street(tokens, 0, i) + self._score_transition(
+                tokens, i, N, has_digit
+            )
+            scored.append((i, score))
 
-            # Transition Bonus
-            if rest_tokens:
-                # Se o primeiro token for numero, eh um corte muito confiavel (House Number)
-                if any(c.isdigit() for c in rest_tokens[0]):
-                    score += 15.0
-                else:
-                    total_t_score = 0.0
-                    for r_idx, r_token in enumerate(rest_tokens):
-                        r_weight = self.weights.get(r_token, 0.0)
-                        best_r_score = 0.0
-                        
-                        # Define posicoes validas para buscar no JSON baseadas no tamanho do resto
-                        if len(rest_tokens) == 1:
-                            valid_pos = ["single", "start"]
-                        elif r_idx == 0:
-                            valid_pos = ["start", "single"]
-                        elif r_idx == len(rest_tokens) - 1:
-                            valid_pos = ["end", "middle"]
-                        else:
-                            valid_pos = ["middle"]
-                            
-                        for role in ["neighborhood", "city"]:
-                            for pos in valid_pos:
-                                r_stats = self.stats.get(r_token, {}).get(role, {}).get(pos)
-                                if r_stats:
-                                    r_score = r_stats.llr * r_weight
-                                    if r_score > best_r_score:
-                                        best_r_score = r_score
-                        total_t_score += best_r_score
-                        
-                    avg_t_score = total_t_score / len(rest_tokens)
-                    
-                    # Se nao ha NENHUM numero na query inteira, o risco de corte precoce eh gigante
-                    has_any_digit = any(any(c.isdigit() for c in t) for t in tokens)
-                    if not has_any_digit:
-                        avg_t_score *= 0.2
-                        
-                    score += avg_t_score
+        scored.sort(key=lambda x: x[1], reverse=True)
 
-            hypotheses.append(CutHypothesis(" ".join(street_tokens), " ".join(rest_tokens), score))
-
-        hypotheses.sort(key=lambda h: h.score, reverse=True)
-        return hypotheses
+        return [
+            CutHypothesis(" ".join(tokens[:i]), " ".join(tokens[i:]), score) for i, score in scored
+        ]
