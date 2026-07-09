@@ -132,6 +132,32 @@ class NormalizedAddress(NamedTuple):
     number: int
 
 
+from enum import IntEnum
+
+
+class Pos(IntEnum):
+    """Token position within a sequence. Values are array indices."""
+
+    START = 0
+    MIDDLE = 1
+    END = 2
+    SINGLE = 3
+
+
+class Role(IntEnum):
+    """Token role in an address. Values are array indices."""
+
+    STREET = 0
+    NEIGHBORHOOD = 1
+    CITY = 2
+
+
+class AddressKey(NamedTuple):
+    token: str
+    role: Role
+    pos: Pos
+
+
 class TokenStats(NamedTuple):
     llr: float
     mean: float

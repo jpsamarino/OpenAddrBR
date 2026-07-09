@@ -33,7 +33,7 @@ Transition score evaluates the rest tokens as neighborhood/city candidates:
 import json
 import math
 
-from openaddrbr.core.models._models import CutHypothesis, Pos, Role, TokenProfile, TokenStats
+from openaddrbr.core.models._models import AddressKey, CutHypothesis, Pos, Role, TokenStats
 from openaddrbr.utils._text import normalize_text
 
 
@@ -100,11 +100,12 @@ class AddressCutter:
 
         role_totals = [sum(rc) for rc in global_counts]
 
-        # Pass 2: Build TokenProfile for each token.
-        self.stats: dict[str, TokenProfile] = {}
+        # Pass 2: Build self.stats & self.weights
+        self.stats: dict[AddressKey, TokenStats] = {}
+        self.weights: dict[str, float] = {}
 
         for token, roles in raw_tokens.items():
-            role_slots: list[tuple | None] = [None] * len(Role)
+            self.weights[token] = math.log(token_totals[token] + 1)
 
             for r, role_key in enumerate(self._ROLE_KEYS):
                 positions = roles.get(role_key)
@@ -115,24 +116,19 @@ class AddressCutter:
                 token_role_total = sum(p["qt_entities"] for p in positions.values())
                 rt = role_totals[r]
 
-                pos_slots: list[TokenStats | None] = [None] * len(Pos)
                 for pos_str, stats in positions.items():
                     p = self._POS_LOOKUP[pos_str]
                     qt = stats["qt_entities"]
                     p_token = (qt + alpha) / (token_role_total + alpha * num_pos)
                     p_corpus = global_counts[r][p] / rt if rt > 0 else 1e-5
-                    pos_slots[p] = TokenStats(
-                        llr=math.log(p_token / p_corpus),
+                    llr = math.log(p_token / p_corpus)
+                    std = max(stats["std"], 0.5)
+                    self.stats[AddressKey(token, r, p)] = TokenStats(
+                        llr=llr,
                         mean=stats["mean"],
-                        std=max(stats["std"], 0.5),
+                        std=std,
                         qt_entities=qt,
                     )
-                role_slots[r] = tuple(pos_slots)
-
-            self.stats[token] = TokenProfile(
-                weight=math.log(token_totals[token] + 1),
-                roles=(role_slots[0], role_slots[1], role_slots[2]),
-            )
 
     def _score_street(self, tokens: list[str], start: int, end: int) -> float:
         """Positional Naive Bayes score for a street name hypothesis."""
@@ -145,19 +141,19 @@ class AddressCutter:
             token = tokens[i]
             pos = self.token_position(i - start, L)
 
-            profile = self.stats.get(token)
-            street_slots = profile.roles[Role.STREET] if profile else None
-            ts = street_slots[pos] if street_slots else None
-
+            ts = self.stats.get((token, Role.STREET, pos))
             if not ts:
                 score += self.oov_penalty
                 continue
 
-            gaussian = self.gaussian_penalty(L, ts.mean, ts.std)
-            token_score = max(ts.llr * profile.weight, self.llr_floor) + gaussian
+            llr, mean, std, qt_entities = ts
+            weight = self.weights.get(token, 0.0)
+
+            gaussian = self.gaussian_penalty(L, mean, std)
+            token_score = max(llr * weight, self.llr_floor) + gaussian
 
             if pos == Pos.END and token.isdigit():
-                token_score += self.house_number_penalty(ts.qt_entities, self.house_number_base)
+                token_score += self.house_number_penalty(qt_entities, self.house_number_base)
 
             score += token_score
 
@@ -176,8 +172,9 @@ class AddressCutter:
 
         total = 0.0
         for i in range(start, end):
-            profile = self.stats.get(tokens[i])
-            if not profile:
+            token = tokens[i]
+            weight = self.weights.get(token)
+            if weight is None:
                 continue
 
             pos = self.token_position(i - start, R)
@@ -191,13 +188,10 @@ class AddressCutter:
 
             best = 0.0
             for role in self._TRANSITION_ROLES:
-                role_slots = profile.roles[role]
-                if not role_slots:
-                    continue
                 for p in check:
-                    ts = role_slots[p]
+                    ts = self.stats.get((token, role, p))
                     if ts:
-                        s = ts.llr * profile.weight
+                        s = ts.llr * weight
                         if s > best:
                             best = s
             total += best
@@ -216,7 +210,7 @@ class AddressCutter:
 
         # Hard cut: commas are explicit delimiters
         if "," in query:
-            street, rest = (normalize_text(p) for p in query.split(",", 1))
+            street, rest = (normalize_text(p).strip() for p in query.split(",", 1))
             s_tok, r_tok = street.split(), rest.split()
             all_tok = s_tok + r_tok
             split = len(s_tok)
