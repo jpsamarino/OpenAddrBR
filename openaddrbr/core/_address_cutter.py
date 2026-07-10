@@ -142,11 +142,15 @@ class AddressCutter:
             pos = self.token_position(i - start, L)
 
             ts = self.stats.get((token, Role.STREET, pos))
-            if not ts and pos == Pos.SINGLE:
-                ts = self.stats.get((token, Role.STREET, Pos.END))
             if not ts:
-                score += self.oov_penalty
-                continue
+                if pos == Pos.SINGLE:
+                    ts = self.stats.get((token, Role.STREET, Pos.END))
+                elif pos == Pos.END:
+                    ts = self.stats.get((token, Role.STREET, Pos.SINGLE))
+                
+                if not ts:
+                    score += self.oov_penalty
+                    continue
 
             llr, mean, std, qt_entities = ts
             weight = self.weights.get(token, 0.0)
@@ -192,8 +196,12 @@ class AddressCutter:
             for role in self._TRANSITION_ROLES:
                 for p in check:
                     ts = self.stats.get((token, role, p))
-                    if not ts and p == Pos.SINGLE:
-                        ts = self.stats.get((token, role, Pos.END))
+                    if not ts:
+                        if p == Pos.SINGLE:
+                            ts = self.stats.get((token, role, Pos.END))
+                        elif p == Pos.END:
+                            ts = self.stats.get((token, role, Pos.SINGLE))
+                            
                     if ts:
                         s = ts.llr * weight
                         if s > best:
