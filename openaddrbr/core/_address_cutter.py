@@ -55,9 +55,6 @@ class AddressCutter:
 
     def _tokenize(self, text: str) -> list[str]:
         raw_tokens = text.split()
-        if self.gluing_threshold is None:
-            return raw_tokens
-            
         import re
         final_tokens = []
         for token in raw_tokens:
@@ -67,17 +64,21 @@ class AddressCutter:
                 
             parts = [p for p in re.split(r'(\d+)', token) if p]
             
-            should_split = False
-            for p in parts:
-                if p.isalpha() and len(p) > self.gluing_threshold:
-                    should_split = True
-                    break
-                    
-            if should_split:
+            # Se o token misto já existe no vocabulário oficial, mantém junto
+            if token in self.weights:
+                final_tokens.append(token)
+                continue
+                
+            # Checar se a parte alfabética existe no vocabulário
+            alpha_parts = [p for p in parts if p.isalpha()]
+            if any(p in self.weights for p in alpha_parts):
                 final_tokens.extend(parts)
             else:
-                final_tokens.append(token)
-                
+                # Comportamento fallback antigo do gluing_threshold
+                if self.gluing_threshold is not None and any(len(p) > self.gluing_threshold for p in alpha_parts):
+                    final_tokens.extend(parts)
+                else:
+                    final_tokens.append(token)
         return final_tokens
 
     @staticmethod
