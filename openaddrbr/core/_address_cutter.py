@@ -102,6 +102,9 @@ class AddressCutter:
         house_number_bonus: float = 15.0,
         no_digit_damping: float = 0.2,
         gluing_threshold: int | None = 2,
+        use_kelly: bool = True,
+        kelly_min: float = 0.30,
+        kelly_decay: float = 2.0,
     ):
         # Tunable scoring constants — override via __init__ or mutate on instance
         self.oov_penalty = oov_penalty
@@ -110,6 +113,9 @@ class AddressCutter:
         self.house_number_bonus = house_number_bonus
         self.no_digit_damping = no_digit_damping
         self.gluing_threshold = gluing_threshold
+        self.use_kelly = use_kelly
+        self.kelly_min = kelly_min
+        self.kelly_decay = kelly_decay
 
         with open(json_path, "r", encoding="utf-8") as f:
             raw_tokens = json.load(f).get("tokens", {})
@@ -185,7 +191,14 @@ class AddressCutter:
             weight = self.weights.get(token, 0.0)
 
             gaussian = self.gaussian_penalty(L, mean, std)
-            token_score = max(llr * weight, self.llr_floor) + gaussian
+
+            if self.use_kelly and llr < 0:
+                kelly_fraction = self.kelly_min + (1.0 - self.kelly_min) * math.exp(llr / self.kelly_decay)
+                final_llr = llr * kelly_fraction
+            else:
+                final_llr = max(llr, self.llr_floor)
+
+            token_score = (final_llr * weight) + gaussian
 
             if pos == Pos.END and token.isdigit():
                 token_score += self.house_number_penalty(qt_entities, self.house_number_base)
@@ -232,7 +245,13 @@ class AddressCutter:
                             ts = self.stats.get((token, role, Pos.SINGLE))
                             
                     if ts:
-                        s = ts.llr * weight
+                        if self.use_kelly and ts.llr < 0:
+                            kelly_fraction = self.kelly_min + (1.0 - self.kelly_min) * math.exp(ts.llr / self.kelly_decay)
+                            llr = ts.llr * kelly_fraction
+                        else:
+                            llr = max(ts.llr, self.llr_floor)
+                            
+                        s = llr * weight
                         if s > best:
                             best = s
             total += best
