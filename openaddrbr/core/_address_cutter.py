@@ -53,6 +53,33 @@ class AddressCutter:
         rare ones (e.g. '1200') get penalized heavily."""
         return base / (1.0 + math.log(qt_entities + 1))
 
+    def _tokenize(self, text: str) -> list[str]:
+        raw_tokens = text.split()
+        if self.gluing_threshold is None:
+            return raw_tokens
+            
+        import re
+        final_tokens = []
+        for token in raw_tokens:
+            if token.isalpha() or token.isdigit():
+                final_tokens.append(token)
+                continue
+                
+            parts = [p for p in re.split(r'(\d+)', token) if p]
+            
+            should_split = False
+            for p in parts:
+                if p.isalpha() and len(p) > self.gluing_threshold:
+                    should_split = True
+                    break
+                    
+            if should_split:
+                final_tokens.extend(parts)
+            else:
+                final_tokens.append(token)
+                
+        return final_tokens
+
     @staticmethod
     def token_position(index: int, length: int) -> int:
         """Maps a token's index within a sequence to its positional enum (int)."""
@@ -74,6 +101,7 @@ class AddressCutter:
         house_number_base: float = -20.0,
         house_number_bonus: float = 15.0,
         no_digit_damping: float = 0.2,
+        gluing_threshold: int | None = 2,
     ):
         # Tunable scoring constants — override via __init__ or mutate on instance
         self.oov_penalty = oov_penalty
@@ -81,6 +109,7 @@ class AddressCutter:
         self.house_number_base = house_number_base
         self.house_number_bonus = house_number_bonus
         self.no_digit_damping = no_digit_damping
+        self.gluing_threshold = gluing_threshold
 
         with open(json_path, "r", encoding="utf-8") as f:
             raw_tokens = json.load(f).get("tokens", {})
@@ -223,7 +252,7 @@ class AddressCutter:
         # Hard cut: commas are explicit delimiters
         if "," in query:
             street, rest = (normalize_text(p).strip() for p in query.split(",", 1))
-            s_tok, r_tok = street.split(), rest.split()
+            s_tok, r_tok = self._tokenize(street), self._tokenize(rest)
             all_tok = s_tok + r_tok
             split = len(s_tok)
             score = self._score_street(all_tok, 0, split) + self._score_transition(
@@ -232,7 +261,7 @@ class AddressCutter:
             return [CutHypothesis(street, rest, score)]
 
         norm_query = normalize_text(query)
-        tokens = norm_query.split()
+        tokens = self._tokenize(norm_query)
         N = len(tokens)
         if N == 0:
             return []
