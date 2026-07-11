@@ -179,10 +179,23 @@ class AddressCutter:
 
             ts = self.stats.get((token, Role.STREET, pos))
             if not ts:
+                # Anti-Drop Prefix: Permite flexibilidade de posição para o street matching
                 if pos == Pos.SINGLE:
-                    ts = self.stats.get((token, Role.STREET, Pos.END))
+                    ts = (self.stats.get((token, Role.STREET, Pos.END)) or 
+                          self.stats.get((token, Role.STREET, Pos.START)) or 
+                          self.stats.get((token, Role.STREET, Pos.MIDDLE)))
                 elif pos == Pos.END:
-                    ts = self.stats.get((token, Role.STREET, Pos.SINGLE))
+                    ts = (self.stats.get((token, Role.STREET, Pos.SINGLE)) or 
+                          self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
+                          self.stats.get((token, Role.STREET, Pos.START)))
+                elif pos == Pos.START:
+                    ts = (self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
+                          self.stats.get((token, Role.STREET, Pos.END)) or 
+                          self.stats.get((token, Role.STREET, Pos.SINGLE)))
+                elif pos == Pos.MIDDLE:
+                    ts = (self.stats.get((token, Role.STREET, Pos.START)) or 
+                          self.stats.get((token, Role.STREET, Pos.END)) or 
+                          self.stats.get((token, Role.STREET, Pos.SINGLE)))
                 
                 if not ts:
                     score += self.oov_penalty
