@@ -166,6 +166,55 @@ class AddressCutter:
                         qt_entities=qt,
                     )
 
+        # Build SymSpell index for top 5000 tokens to allow typo tolerance
+        self.typo_map: dict[str, str] = {}
+        # Sort tokens by frequency descending
+        top_tokens = sorted(token_totals.items(), key=lambda x: x[1], reverse=True)[:5000]
+        for token, count in top_tokens:
+            if len(token) < 4:
+                continue
+            if token not in self.typo_map:
+                self.typo_map[token] = token
+            for i in range(len(token)):
+                d = token[:i] + token[i+1:]
+                if d not in self.typo_map:
+                    self.typo_map[d] = token
+
+    def _find_closest_typo(self, token: str):
+        if len(token) < 3:
+            return None
+        if token in self.typo_map:
+            return self.typo_map[token]
+        # Check distance 2 (which covers edit dist 1 of query vs edit dist 1 of dict)
+        for i in range(len(token)):
+            d = token[:i] + token[i+1:]
+            if d in self.typo_map:
+                return self.typo_map[d]
+        return None
+
+    def _get_stats_with_fallback(self, token: str, pos: Pos):
+        ts = self.stats.get((token, Role.STREET, pos))
+        if not ts:
+            # Anti-Drop Prefix: Permite flexibilidade de posição para o street matching
+            if pos == Pos.SINGLE:
+                ts = (self.stats.get((token, Role.STREET, Pos.END)) or 
+                      self.stats.get((token, Role.STREET, Pos.START)) or 
+                      self.stats.get((token, Role.STREET, Pos.MIDDLE)))
+            elif pos == Pos.END:
+                ts = (self.stats.get((token, Role.STREET, Pos.SINGLE)) or 
+                      self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
+                      self.stats.get((token, Role.STREET, Pos.START)))
+            elif pos == Pos.START:
+                ts = (self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
+                      self.stats.get((token, Role.STREET, Pos.END)) or 
+                      self.stats.get((token, Role.STREET, Pos.SINGLE)))
+            elif pos == Pos.MIDDLE:
+                ts = (self.stats.get((token, Role.STREET, Pos.START)) or 
+                      self.stats.get((token, Role.STREET, Pos.END)) or 
+                      self.stats.get((token, Role.STREET, Pos.SINGLE)))
+        return ts
+
+
     def _score_street(self, tokens: list[str], start: int, end: int) -> float:
         """Positional Naive Bayes score for a street name hypothesis."""
         L = end - start
@@ -177,25 +226,16 @@ class AddressCutter:
             token = tokens[i]
             pos = self.token_position(i - start, L)
 
-            ts = self.stats.get((token, Role.STREET, pos))
+            ts = self._get_stats_with_fallback(token, pos)
+            typo_penalty = 0.0
+
             if not ts:
-                # Anti-Drop Prefix: Permite flexibilidade de posição para o street matching
-                if pos == Pos.SINGLE:
-                    ts = (self.stats.get((token, Role.STREET, Pos.END)) or 
-                          self.stats.get((token, Role.STREET, Pos.START)) or 
-                          self.stats.get((token, Role.STREET, Pos.MIDDLE)))
-                elif pos == Pos.END:
-                    ts = (self.stats.get((token, Role.STREET, Pos.SINGLE)) or 
-                          self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
-                          self.stats.get((token, Role.STREET, Pos.START)))
-                elif pos == Pos.START:
-                    ts = (self.stats.get((token, Role.STREET, Pos.MIDDLE)) or 
-                          self.stats.get((token, Role.STREET, Pos.END)) or 
-                          self.stats.get((token, Role.STREET, Pos.SINGLE)))
-                elif pos == Pos.MIDDLE:
-                    ts = (self.stats.get((token, Role.STREET, Pos.START)) or 
-                          self.stats.get((token, Role.STREET, Pos.END)) or 
-                          self.stats.get((token, Role.STREET, Pos.SINGLE)))
+                corrected = self._find_closest_typo(token)
+                if corrected:
+                    ts = self._get_stats_with_fallback(corrected, pos)
+                    if ts:
+                        token = corrected # Use the corrected token's weight
+                        typo_penalty = -2.0 # Apply a small penalty for the typo instead of -10.0
                 
                 if not ts:
                     score += self.oov_penalty
@@ -212,7 +252,7 @@ class AddressCutter:
             else:
                 final_llr = max(llr, self.llr_floor)
 
-            token_score = (final_llr * weight) + gaussian
+            token_score = (final_llr * weight) + gaussian + typo_penalty
 
             if pos == Pos.END and token.isdigit():
                 token_score += self.house_number_penalty(qt_entities, self.house_number_base)
