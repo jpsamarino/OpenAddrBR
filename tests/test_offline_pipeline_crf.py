@@ -1,10 +1,14 @@
-﻿import os
+import os
 import pytest
 import spacy
 from spacy.tokens import DocBin
 from data.offline_pipeline_crf import generate_datasets
 
-def test_generate_datasets(tmp_path):
+from unittest.mock import patch
+
+@patch("data.offline_pipeline_crf.inject_noise")
+def test_generate_datasets(mock_inject_noise, tmp_path):
+    mock_inject_noise.side_effect = lambda x: (x, "dummy_flag")
     db_path = tmp_path / "dummy.db"
     import sqlite3
     conn = sqlite3.connect(db_path)
