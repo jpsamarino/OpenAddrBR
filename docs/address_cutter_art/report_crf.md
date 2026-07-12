@@ -1,13 +1,24 @@
-# RelatÛrio de ValidaÁ„o dos Dados para spaCy CRF
+# Relat√≥rio de Valida√ß√£o dos Dados para spaCy CRF
 
-## An·lise Visual do Corpus Gerado
+## An√°lise Visual do Corpus Gerado
 
-ApÛs a execuÁ„o do pipeline de dados (data/offline_pipeline_crf.py), uma amostra visual do arquivo corpus_fasttext_crf.txt foi analisada. O conte˙do gerado È composto por nomes de logradouros (ex: "AVENIDA BRASIL", "RUA COSTA E SILVA") intercalados com seus respectivos bairros (ex: "TUCANO", "CHACARA"). Os dados apresentaram qualidade razo·vel, com as strings limpas e separadas por quebras de linha de forma consistente. N„o foram observados sinais de "envenenamento" de dados, como caracteres indesejados, erros de encoding graves ou artefatos que poderiam prejudicar o treinamento do FastText ou do CRF, garantindo que o dataset est· apto para os experimentos subsequentes.
+Ap√≥s a execu√ß√£o do pipeline de dados (data/offline_pipeline_crf.py), uma amostra visual do arquivo corpus_fasttext_crf.txt foi analisada. O conte√∫do gerado √© composto por nomes de logradouros (ex: "AVENIDA BRASIL", "RUA COSTA E SILVA") intercalados com seus respectivos bairros (ex: "TUCANO", "CHACARA"). Os dados apresentaram qualidade razo√°vel, com as strings limpas e separadas por quebras de linha de forma consistente. N√£o foram observados sinais de "envenenamento" de dados, como caracteres indesejados, erros de encoding graves ou artefatos que poderiam prejudicar o treinamento do FastText ou do CRF, garantindo que o dataset est√° apto para os experimentos subsequentes.
 
 ## Treinamento FastText e spaCy CRF
 
-Os embeddings treinados com o FastText (50 dimensıes, window 3, min_count 1, 5 Èpocas) apresentaram um agrupamento sem‚ntico satisfatÛrio para os tokens de logradouros, capturando similaridades em termos frequentes (como diferentes variaÁıes de "RUA" ou "AV").
-Em relaÁ„o ‡s hiper-escolhas do modelo:
-- **FastText**: 5 Èpocas provaram ser adequadas para o tamanho do corpus, permitindo boa convergÍncia sem overfitting precoce.
-- **spaCy CRF (NER)**: O otimizador foca na eficiÍncia, com hiperpar‚metros padrıes adequados. Foi utilizada a inicializaÁ„o de vetores prÈ-treinados est·ticos gerados pelo FastText, com `dropout` configurado para 0.1, garantindo regularizaÁ„o contra overfitting em logradouros menos frequentes. (Nota de execuÁ„o: em determinados ambientes Windows, o limite do MAX_PATH requer configuraÁıes especÌficas para o carregamento correto da biblioteca spaCy).
+Os embeddings treinados com o FastText (50 dimens√µes, window 3, min_count 1, 5 √©pocas) apresentaram um agrupamento sem√¢ntico satisfat√≥rio para os tokens de logradouros, capturando similaridades em termos frequentes (como diferentes varia√ß√µes de "RUA" ou "AV").
+Em rela√ß√£o √†s hiper-escolhas do modelo:
+- **FastText**: 5 √©pocas provaram ser adequadas para o tamanho do corpus, permitindo boa converg√™ncia sem overfitting precoce.
+- **spaCy CRF (NER)**: O otimizador foca na efici√™ncia, com hiperpar√¢metros padr√µes adequados. Foi utilizada a inicializa√ß√£o de vetores pr√©-treinados est√°ticos gerados pelo FastText, com `dropout` configurado para 0.1, garantindo regulariza√ß√£o contra overfitting em logradouros menos frequentes. (Nota de execu√ß√£o: em determinados ambientes Windows, o limite do MAX_PATH requer configura√ß√µes espec√≠ficas para o carregamento correto da biblioteca spaCy).
 
+## Conclus√£o Final do Benchmark: Original vs CRF
+
+### 1. Melhoria na Acur√°cia (Typos e Token Gluing)
+O modelo CRF lida melhor com Typos e Token Gluing pois avalia o contexto sequencial (Markov) e caracter√≠sticas morfol√≥gicas (prefixos, sufixos, word shape) das palavras, ao inv√©s de depender de casamento exato no dicion√°rio. Ele consegue inferir padr√µes (como uma palavra antes de um n√∫mero) independentemente de erros ortogr√°ficos.
+
+### 2. Impacto na Lat√™ncia
+No benchmark original, a lat√™ncia m√©dia foi de 0.027 ms (~36.500 QPS). Um modelo CRF (como spaCy) normalmente possui lat√™ncia de 1 a 5 ms (200-1000 QPS), o que representa uma piora de 50x a 100x na performance. Apesar de ser invi√°vel para processamento em tempo real de alt√≠ssima volumetria se aplicado isoladamente em todas as queries, √© poss√≠vel otimiz√°-lo (via implementa√ß√µes nativas) ou utiliz√°-lo estrategicamente.
+
+### 3. Recomenda√ß√£o Final de Arquitetura
+**Recomenda√ß√£o: Arquitetura H√≠brida**
+A melhor solu√ß√£o √© usar o AddressCutter original para processar 100% das queries (caminho feliz) por sua velocidade impressionante (0.02 ms), resolvendo a grande maioria dos casos simples. Apenas nos casos em que a heur√≠stica retorna baixa confian√ßa (falhas ou n√£o reconhecimento), a query seria redirecionada para o modelo CRF (fallback). Isso mant√©m a lat√™ncia m√©dia baixa e garante alta acur√°cia nos casos adversos (typos pesados e colagem de tokens).
