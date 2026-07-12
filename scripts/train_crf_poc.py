@@ -18,10 +18,10 @@ def train_fasttext(corpus_path, output_path, epochs=5):
     return w2v_path
 
 def init_spacy_config():
-    subprocess.run(["python", "-m", "spacy", "init", "config", "config_crf.cfg", "--lang", "pt", "--pipeline", "ner", "--optimize", "efficiency", "--force"], check=True)
+    os.makedirs("models/crf_poc", exist_ok=True)
+    subprocess.run(["python", "-m", "spacy", "init", "config", "models/crf_poc/config_crf.cfg", "--lang", "pt", "--pipeline", "ner", "--optimize", "efficiency", "--force"], check=True)
 
 if __name__ == "__main__":
     w2v_path = train_fasttext("data/corpus_fasttext_crf.txt", "data/fasttext_crf.model")
     init_spacy_config()
     subprocess.run(["python", "-m", "spacy", "init", "vectors", "pt", w2v_path, "data/spacy_vectors_crf"], check=True)
-
