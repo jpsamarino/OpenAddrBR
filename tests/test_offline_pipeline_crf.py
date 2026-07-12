@@ -1,5 +1,7 @@
 ﻿import os
 import pytest
+import spacy
+from spacy.tokens import DocBin
 from data.offline_pipeline_crf import generate_datasets
 
 def test_generate_datasets(tmp_path):
@@ -7,13 +9,42 @@ def test_generate_datasets(tmp_path):
     import sqlite3
     conn = sqlite3.connect(db_path)
     conn.execute("CREATE TABLE address (street_normalized TEXT, neighborhood_normalized TEXT, city_code TEXT)")
-    conn.execute("INSERT INTO address VALUES ('RUA JOSE COSTA', 'CENTRO', '123')")
+    conn.execute("INSERT INTO address VALUES ('RUA UM', 'BAIRRO UM', '123')")
+    conn.execute("INSERT INTO address VALUES ('RUA DOIS', 'BAIRRO DOIS', '123')")
+    conn.execute("INSERT INTO address VALUES ('RUA TRES', 'BAIRRO TRES', '123')")
+    conn.execute("INSERT INTO address VALUES ('RUA QUATRO', 'BAIRRO QUATRO', '123')")
+    conn.execute("INSERT INTO address VALUES ('RUA CINCO', 'BAIRRO CINCO', '123')")
     conn.commit()
     conn.close()
     
     train_out = tmp_path / "train_crf.spacy"
+    dev_out = tmp_path / "dev_crf.spacy"
     txt_out = tmp_path / "corpus_crf.txt"
     
-    generate_datasets(str(db_path), str(train_out), str(txt_out), limit=1)
+    generate_datasets(str(db_path), str(train_out), str(dev_out), str(txt_out), limit=5)
+    
     assert train_out.exists()
+    assert dev_out.exists()
     assert txt_out.exists()
+    
+    nlp = spacy.blank("pt")
+    
+    train_bin = DocBin().from_disk(train_out)
+    train_docs = list(train_bin.get_docs(nlp.vocab))
+    
+    dev_bin = DocBin().from_disk(dev_out)
+    dev_docs = list(dev_bin.get_docs(nlp.vocab))
+    
+    # 80% of 5 is 4
+    assert len(train_docs) == 4
+    assert len(dev_docs) == 1
+    
+    for doc in train_docs + dev_docs:
+        ents = {ent.label_: ent.text for ent in doc.ents}
+        assert "STREET" in ents
+        assert "NEIGH" in ents
+        
+    with open(txt_out, "r", encoding="utf-8") as f:
+        lines = f.read().splitlines()
+        
+    assert len(lines) == 10
