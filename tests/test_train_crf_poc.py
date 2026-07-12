@@ -7,3 +7,4 @@ def test_train_fasttext(tmp_path):
     out_model = tmp_path / "ft.model"
     train_fasttext(str(corpus_file), str(out_model), epochs=1)
     assert out_model.exists()
+    assert (tmp_path / "ft.model.txt").exists()
