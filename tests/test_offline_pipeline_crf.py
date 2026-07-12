@@ -51,4 +51,4 @@ def test_generate_datasets(mock_inject_noise, tmp_path):
     with open(txt_out, "r", encoding="utf-8") as f:
         lines = f.read().splitlines()
         
-    assert len(lines) == 10
+    assert len(lines) == 5

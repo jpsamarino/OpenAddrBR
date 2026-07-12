@@ -10,6 +10,11 @@ def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Database not found at {db_path}")
 
+    for out_path in [train_out, dev_out, txt_out]:
+        dir_name = os.path.dirname(out_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+
     nlp = spacy.blank("pt")
     
     with contextlib.closing(sqlite3.connect(db_path)) as conn:
@@ -23,10 +28,6 @@ def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
                 street = row[0].strip()
                 neigh = row[1].strip() if row[1] else ""
                 
-                f_txt.write(street + "\n")
-                if neigh:
-                    f_txt.write(neigh + "\n")
-                
                 street_noisy, _ = inject_noise(street)
                 if not street_noisy:
                     continue
@@ -35,20 +36,24 @@ def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
                 if neigh:
                     query += " " + neigh
                     
+                f_txt.write(query + "\n")
+                    
                 doc = nlp.make_doc(query)
                 ents = []
                 
                 start_idx = 0
                 end_idx = len(street_noisy)
                 span = doc.char_span(start_idx, end_idx, label="STREET")
-                if span:
-                    ents.append(span)
+                if span is None:
+                    continue
+                ents.append(span)
                 
                 if neigh:
                     n_idx = end_idx + 1
                     span_n = doc.char_span(n_idx, n_idx + len(neigh), label="NEIGH")
-                    if span_n:
-                        ents.append(span_n)
+                    if span_n is None:
+                        continue
+                    ents.append(span_n)
                 
                 try:
                     doc.ents = ents
