@@ -238,7 +238,13 @@ class AddressCutter:
                         typo_penalty = -2.0 # Apply a small penalty for the typo instead of -10.0
                 
                 if not ts:
-                    score += self.oov_penalty
+                    # Contextual penalty: if this is the very last token in the entire query,
+                    # it might be an incomplete word being typed, or a house number.
+                    # We penalize it much less (-1.0) than a true OOV in the middle (-10.0).
+                    if i == len(tokens) - 1:
+                        score += -1.0
+                    else:
+                        score += self.oov_penalty
                     continue
 
             llr, mean, std, qt_entities = ts

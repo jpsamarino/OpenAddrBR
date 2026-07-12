@@ -12,7 +12,10 @@ Geocoder
 LocationSearch
 ├── search_city -> ok
 ├── search_neighborhood -> ok
-├── search_street
-├── autocomplete
+├── search_street -> ok
+├── autocomplete_street -> ok
+├── autocomplete_address
 ├── parse_address
 └── search_cep
+
+AddressCutter -> docs\superpowers\specs\2026-06-30-address-cutter-design.md
