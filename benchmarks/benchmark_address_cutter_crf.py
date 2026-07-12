@@ -11,10 +11,8 @@ from benchmarks.noise_injector import inject_noise
 
 SGEODB = os.environ.get("SGEOBR_DB_PATH", "D:/projetos/SD-External-Data/Scripts-Scraping/Get-Lat-Long/ibge_cnefe_v2/data/sgeobr.db")
 LIMIT_SAMPLES = 100000
-PROB_TOKEN_GLUING = 0.05
 PROB_TYPING_STREET = 0.33
 PROB_TYPING_NUMBER = 0.66
-PROB_INJECT_NUMBER_IN_NEIGHBORHOOD = 0.80
 
 def run_benchmark(model_path="models/crf_poc/model-best"):
     print(f"Loading CRF (spaCy) model from {model_path}...")
@@ -23,6 +21,10 @@ def run_benchmark(model_path="models/crf_poc/model-best"):
     except OSError:
         print("Model not found, skipping benchmark run.")
         return
+
+    if not os.path.exists(SGEODB):
+        print(f"Error: Database not found at {SGEODB}")
+        sys.exit(1)
 
     conn = sqlite3.connect(SGEODB)
     conn.row_factory = sqlite3.Row
@@ -91,6 +93,12 @@ def run_benchmark(model_path="models/crf_poc/model-best"):
         print(f"Total Inference Time: {total_latency_sec:.4f}s")
         print(f"Average Latency per Query: {avg_ms:.4f} ms")
         print(f"Throughput (QPS): {qps:.0f} queries/sec")
+
+        print("\n--- Accuracy by Tag ---")
+        for tag, stats in stats_by_tag.items():
+            if stats["total"] > 0:
+                acc = (stats["hits_at_1"] / stats["total"]) * 100
+                print(f"  {tag}: {acc:.2f}% ({stats['hits_at_1']}/{stats['total']})")
 
 if __name__ == "__main__":
     run_benchmark()
