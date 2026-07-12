@@ -7,8 +7,12 @@ from data.offline_pipeline_crf import generate_datasets
 from unittest.mock import patch
 
 @patch("data.offline_pipeline_crf.inject_noise")
-def test_generate_datasets(mock_inject_noise, tmp_path):
+@patch("random.random")
+@patch("random.randint")
+def test_generate_datasets(mock_randint, mock_random, mock_inject_noise, tmp_path):
     mock_inject_noise.side_effect = lambda x: (x, ["mock"])
+    mock_random.return_value = 0.6  # [STREET] [NUMBER] [NEIGHBORHOOD]
+    mock_randint.return_value = 123
     db_path = tmp_path / "dummy.db"
     import sqlite3
     conn = sqlite3.connect(db_path)
@@ -46,7 +50,9 @@ def test_generate_datasets(mock_inject_noise, tmp_path):
     for doc in train_docs + dev_docs:
         ents = {ent.label_: ent.text for ent in doc.ents}
         assert "STREET" in ents
+        assert "NUMBER" in ents
         assert "NEIGH" in ents
+        assert ents["NUMBER"] == "123"
         
     with open(txt_out, "r", encoding="utf-8") as f:
         lines = f.read().splitlines()

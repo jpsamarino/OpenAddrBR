@@ -2,11 +2,12 @@ import sqlite3
 import spacy
 from spacy.tokens import DocBin
 import os
+import random
 import contextlib
 
 from benchmarks.noise_injector import inject_noise
 
-def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
+def generate_datasets(db_path, train_out, dev_out, txt_out, limit=200000):
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Database not found at {db_path}")
 
@@ -32,8 +33,28 @@ def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
                 if not street_noisy:
                     continue
                 
+                query_type = random.random()
+                has_number = False
+                has_neigh = False
+                
+                if query_type < 0.2:
+                    pass
+                elif query_type < 0.5:
+                    has_number = True
+                elif query_type < 0.9:
+                    has_number = True
+                    has_neigh = True
+                else:
+                    has_neigh = True
+                
                 query = street_noisy
-                if neigh:
+                
+                number_str = ""
+                if has_number:
+                    number_str = str(random.randint(1, 9999))
+                    query += " " + number_str
+                    
+                if has_neigh and neigh:
                     query += " " + neigh
                     
                 f_txt.write(query + "\n")
@@ -41,19 +62,36 @@ def generate_datasets(db_path, train_out, dev_out, txt_out, limit=1000):
                 doc = nlp.make_doc(query)
                 ents = []
                 
-                start_idx = 0
-                end_idx = len(street_noisy)
-                span = doc.char_span(start_idx, end_idx, label="STREET")
+                s_end = len(street_noisy)
+                span = doc.char_span(0, s_end, label="STREET")
                 if span is None:
                     continue
                 ents.append(span)
                 
-                if neigh:
-                    n_idx = end_idx + 1
-                    span_n = doc.char_span(n_idx, n_idx + len(neigh), label="NEIGH")
-                    if span_n is None:
-                        continue
-                    ents.append(span_n)
+                curr_idx = s_end
+                skip = False
+                if has_number:
+                    curr_idx += 1
+                    span_num = doc.char_span(curr_idx, curr_idx + len(number_str), label="NUMBER")
+                    if span_num is None:
+                        skip = True
+                    else:
+                        ents.append(span_num)
+                    curr_idx += len(number_str)
+                    
+                if skip:
+                    continue
+                    
+                if has_neigh and neigh:
+                    curr_idx += 1
+                    span_ne = doc.char_span(curr_idx, curr_idx + len(neigh), label="NEIGH")
+                    if span_ne is None:
+                        skip = True
+                    else:
+                        ents.append(span_ne)
+                        
+                if skip:
+                    continue
                 
                 try:
                     doc.ents = ents
@@ -82,5 +120,5 @@ if __name__ == "__main__":
         "data/train_crf.spacy",
         "data/dev_crf.spacy",
         "data/corpus_fasttext_crf.txt",
-        limit=50000
+        limit=200000
     )
