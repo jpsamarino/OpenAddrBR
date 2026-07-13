@@ -12,6 +12,8 @@ JSON_STATS = "data/address_stats.json"
 
 import time
 from noise_injector import inject_noise
+import spacy
+from models.viterbi_crf.predictor import ViterbiCRF
 
 # Benchmark Configuration
 LIMIT_SAMPLES = 100000
@@ -36,16 +38,36 @@ def run_benchmark():
     )
     rows = cursor.fetchall()
 
+    print("Loading Viterbi CRF...")
+    try:
+        viterbi = ViterbiCRF()
+    except Exception as e:
+        print(f"Error loading Viterbi: {e}")
+        viterbi = None
+
+    print("Loading SpaCy CRF...")
+    try:
+        nlp_spacy = spacy.load("models/crf_poc/model-best")
+    except Exception as e:
+        print(f"Error loading SpaCy: {e}")
+        nlp_spacy = None
+
     from collections import defaultdict
 
     hits_at_1 = 0
     hits_at_3 = 0
+    hits_viterbi = 0
+    hits_spacy = 0
     total = 0
     mrr_sum = 0.0
     
     stats_by_tag = defaultdict(lambda: {"total": 0, "hits_at_1": 0, "hits_at_3": 0})
+    stats_viterbi = defaultdict(lambda: {"total": 0, "hits": 0})
+    stats_spacy = defaultdict(lambda: {"total": 0, "hits": 0})
 
     total_latency_sec = 0.0
+    latency_viterbi = 0.0
+    latency_spacy = 0.0
 
     for row in rows:
         street = row["street_normalized"] or ""
@@ -156,31 +178,73 @@ def run_benchmark():
                     stats_by_tag[tag]["hits_at_3"] += 1
             mrr_sum += 1.0 / rank
 
+        # Viterbi Prediction
+        if viterbi:
+            t0 = time.perf_counter()
+            res_v = viterbi.parse(query)
+            t1 = time.perf_counter()
+            latency_viterbi += t1 - t0
+            pred_v = res_v.get("STREET", "")
+            if pred_v == expected_street or expected_street in pred_v:
+                hits_viterbi += 1
+                for tag in tags:
+                    stats_viterbi[tag]["hits"] += 1
+                    
+        # SpaCy Prediction
+        if nlp_spacy:
+            t0 = time.perf_counter()
+            doc_s = nlp_spacy(query)
+            t1 = time.perf_counter()
+            latency_spacy += t1 - t0
+            pred_s = ""
+            for ent in doc_s.ents:
+                if ent.label_ == "STREET":
+                    pred_s = ent.text
+                    break
+            if pred_s == expected_street or expected_street in pred_s:
+                hits_spacy += 1
+                for tag in tags:
+                    stats_spacy[tag]["hits"] += 1
+
         for tag in tags:
             stats_by_tag[tag]["total"] += 1
+            stats_viterbi[tag]["total"] += 1
+            stats_spacy[tag]["total"] += 1
 
-    print(f"\n--- Benchmark Results ({total} queries) ---")
+    print(f"\n--- AddressCutter (Regras) Results ({total} queries) ---")
     print(f"Top 1 Accuracy: {(hits_at_1 / total) * 100:.2f}%")
     print(f"Top 3 Accuracy: {(hits_at_3 / total) * 100:.2f}%")
     print(f"Mean Reciprocal Rank (MRR): {mrr_sum / total:.4f}")
-
-    avg_ms = (total_latency_sec / total) * 1000
-    qps = total / total_latency_sec
-    print(f"\n--- Performance Metrics ---")
-    print(f"Total Inference Time: {total_latency_sec:.4f}s")
-    print(f"Average Latency per Query: {avg_ms:.4f} ms")
-    print(f"Throughput (QPS): {qps:.0f} queries/sec")
-
-    print("\n--- Breakdown by Noise Type ---")
-    # Sort tags by total samples descending
+    print(f"Throughput (QPS): {total / total_latency_sec:.0f} queries/sec")
+    print("\n--- Breakdown by Noise Type (AddressCutter) ---")
     sorted_tags = sorted(stats_by_tag.items(), key=lambda x: x[1]["total"], reverse=True)
     for tag, stats in sorted_tags:
         t = stats["total"]
-        if t == 0:
-            continue
+        if t == 0: continue
         acc1 = (stats["hits_at_1"] / t) * 100
-        acc3 = (stats["hits_at_3"] / t) * 100
-        print(f"[{tag:20}] Top 1: {acc1:5.2f}% | Top 3: {acc3:5.2f}% (Total: {t})")
+        print(f"[{tag:20}] Top 1: {acc1:5.2f}% (Total: {t})")
+
+    if nlp_spacy:
+        print(f"\n--- SpaCy CRF Results ({total} queries) ---")
+        print(f"Top 1 Accuracy: {(hits_spacy / total) * 100:.2f}%")
+        print(f"Throughput (QPS): {total / latency_spacy:.0f} queries/sec")
+        print("\n--- Breakdown by Noise Type (SpaCy) ---")
+        for tag, stats in sorted(stats_spacy.items(), key=lambda x: x[1]["total"], reverse=True):
+            t = stats["total"]
+            if t == 0: continue
+            acc1 = (stats["hits"] / t) * 100
+            print(f"[{tag:20}] Top 1: {acc1:5.2f}%")
+
+    if viterbi:
+        print(f"\n--- Viterbi CRF + Trie Results ({total} queries) ---")
+        print(f"Top 1 Accuracy: {(hits_viterbi / total) * 100:.2f}%")
+        print(f"Throughput (QPS): {total / latency_viterbi:.0f} queries/sec")
+        print("\n--- Breakdown by Noise Type (Viterbi) ---")
+        for tag, stats in sorted(stats_viterbi.items(), key=lambda x: x[1]["total"], reverse=True):
+            t = stats["total"]
+            if t == 0: continue
+            acc1 = (stats["hits"] / t) * 100
+            print(f"[{tag:20}] Top 1: {acc1:5.2f}%")
 
 
 if __name__ == "__main__":

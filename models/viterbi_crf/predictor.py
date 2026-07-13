@@ -5,6 +5,10 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from viterbi_crf.feature_extractor import sent2features
 
+import re
+
+TOKEN_RE = re.compile(r'([A-Za-zÀ-ÿ\.\-]+|\d+)')
+
 class ViterbiCRF:
     def __init__(self, model_path=None):
         if model_path is None:
@@ -18,8 +22,8 @@ class ViterbiCRF:
         Recebe uma string, aplica a feature extraction,
         e retorna uma lista de dicionários com os campos extraídos.
         """
-        # A tokenização que usamos no treinamento foi str.split()
-        tokens = text.upper().split()
+        # Tokenização inteligente que separa letras e números (evita token gluing)
+        tokens = TOKEN_RE.findall(text.upper())
         if not tokens:
             return {}
             

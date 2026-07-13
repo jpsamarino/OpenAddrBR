@@ -14,13 +14,22 @@ LIMIT_SAMPLES = 100000
 PROB_TYPING_STREET = 0.33
 PROB_TYPING_NUMBER = 0.66
 
+from models.viterbi_crf.predictor import ViterbiCRF
+
 def run_benchmark(model_path="models/crf_poc/model-best"):
     print(f"Loading CRF (spaCy) model from {model_path}...")
     try:
         nlp = spacy.load(model_path)
     except OSError:
-        print("Model not found, skipping benchmark run.")
-        return
+        print("SpaCy Model not found, skipping SpaCy.")
+        nlp = None
+        
+    print("Loading Viterbi CRF...")
+    try:
+        viterbi = ViterbiCRF()
+    except Exception as e:
+        print(f"Erro no Viterbi: {e}")
+        viterbi = None
 
     if not os.path.exists(SGEODB):
         print(f"Error: Database not found at {SGEODB}")
@@ -33,10 +42,13 @@ def run_benchmark(model_path="models/crf_poc/model-best"):
     cursor.execute(f"SELECT street_normalized, neighborhood_normalized FROM address ORDER BY RANDOM() LIMIT {LIMIT_SAMPLES}")
     rows = cursor.fetchall()
 
-    hits_at_1 = 0
+    hits_spacy = 0
+    hits_viterbi = 0
     total = 0
-    stats_by_tag = defaultdict(lambda: {"total": 0, "hits_at_1": 0})
-    total_latency_sec = 0.0
+    stats_spacy = defaultdict(lambda: {"total": 0, "hits": 0})
+    stats_viterbi = defaultdict(lambda: {"total": 0, "hits": 0})
+    latency_spacy = 0.0
+    latency_viterbi = 0.0
 
     for row in rows:
         street = row["street_normalized"] or ""
@@ -64,41 +76,59 @@ def run_benchmark(model_path="models/crf_poc/model-best"):
             query = f"{street_clean} 123 {neighborhood}"
             expected_street = street_clean
 
-        t0 = time.perf_counter()
-        doc = nlp(query)
-        t1 = time.perf_counter()
+        if nlp:
+            t0 = time.perf_counter()
+            doc = nlp(query)
+            t1 = time.perf_counter()
+            latency_spacy += t1 - t0
 
-        total_latency_sec += t1 - t0
+            pred_street = ""
+            for ent in doc.ents:
+                if ent.label_ == "STREET":
+                    pred_street = ent.text
+                    break
+            
+            if pred_street == expected_street or expected_street in pred_street:
+                hits_spacy += 1
+                for tag in tags:
+                    stats_spacy[tag]["hits"] += 1
+                    
+        if viterbi:
+            t0 = time.perf_counter()
+            res = viterbi.parse(query)
+            t1 = time.perf_counter()
+            latency_viterbi += t1 - t0
+            
+            pred_viterbi = res.get("STREET", "")
+            if pred_viterbi == expected_street or expected_street in pred_viterbi:
+                hits_viterbi += 1
+                for tag in tags:
+                    stats_viterbi[tag]["hits"] += 1
+
         total += 1
-
-        pred_street = ""
-        for ent in doc.ents:
-            if ent.label_ == "STREET":
-                pred_street = ent.text
-                break
-        
-        if pred_street == expected_street or expected_street in pred_street:
-            hits_at_1 += 1
-            for tag in tags:
-                stats_by_tag[tag]["hits_at_1"] += 1
-                
         for tag in tags:
-            stats_by_tag[tag]["total"] += 1
+            stats_spacy[tag]["total"] += 1
+            stats_viterbi[tag]["total"] += 1
 
-    print(f"\n--- CRF Benchmark Results ({total} queries) ---")
+    print(f"\n--- Benchmark Results ({total} queries) ---")
     if total > 0:
-        print(f"Top 1 Accuracy: {(hits_at_1 / total) * 100:.2f}%")
-        avg_ms = (total_latency_sec / total) * 1000
-        qps = total / total_latency_sec
-        print(f"Total Inference Time: {total_latency_sec:.4f}s")
-        print(f"Average Latency per Query: {avg_ms:.4f} ms")
-        print(f"Throughput (QPS): {qps:.0f} queries/sec")
-
-        print("\n--- Accuracy by Tag ---")
-        for tag, stats in stats_by_tag.items():
-            if stats["total"] > 0:
-                acc = (stats["hits_at_1"] / stats["total"]) * 100
-                print(f"  {tag}: {acc:.2f}% ({stats['hits_at_1']}/{stats['total']})")
+        if nlp:
+            print("\n*** SpaCy CRF ***")
+            print(f"Top 1 Accuracy: {(hits_spacy / total) * 100:.2f}%")
+            print(f"Throughput (QPS): {total / latency_spacy:.0f} queries/sec")
+            for tag, stats in stats_spacy.items():
+                if stats["total"] > 0:
+                    acc = (stats["hits"] / stats["total"]) * 100
+                    print(f"  {tag}: {acc:.2f}%")
+                    
+        if viterbi:
+            print("\n*** Viterbi CRF + Trie ***")
+            print(f"Top 1 Accuracy: {(hits_viterbi / total) * 100:.2f}%")
+            print(f"Throughput (QPS): {total / latency_viterbi:.0f} queries/sec")
+            for tag, stats in stats_viterbi.items():
+                if stats["total"] > 0:
+                    acc = (stats["hits"] / stats["total"]) * 100
+                    print(f"  {tag}: {acc:.2f}%")
 
 if __name__ == "__main__":
     run_benchmark()
