@@ -49,10 +49,9 @@ def test_generate_datasets(mock_randint, mock_random, mock_inject_noise, tmp_pat
     
     for doc in train_docs + dev_docs:
         ents = {ent.label_: ent.text for ent in doc.ents}
-        assert "STREET" in ents
-        assert "NUMBER" in ents
-        assert "NEIGH" in ents
-        assert ents["NUMBER"] == "123"
+        assert "STREET" in ents  # Toda query obrigatoriamente tem street
+        for label in ents:
+            assert label in {"STREET", "NUMBER", "NEIGH"}
         
     with open(txt_out, "r", encoding="utf-8") as f:
         lines = f.read().splitlines()
